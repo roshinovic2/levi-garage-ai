@@ -16,3 +16,7 @@ Thumbs.db
 
 # הקלטות קול של אדם אמיתי (מידע אישי) - נשארות מקומיות בלבד
 /03-rollout/poc-voice/audio/
+
+# מפתח Service Account של GCP (Vertex AI)
+gcp-sa*.json
+*-sa.json
