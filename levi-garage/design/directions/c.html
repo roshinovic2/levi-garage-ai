@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מוסך לוי ובניו · כיוון ג: אישור בוואטסאפ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f4f6;
+    --surface: #ffffff;
+    --ink: #0f1720;
+    --muted: #55606d;
+    --line: #dde2e8;
+    --cobalt: #2445cf;
+    --cobalt-soft: #e6ebfb;
+    --bubble-in: #ffffff;
+    --bubble-out: #dbe5ff;
+    --chat-bg: #e9edf2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c1117;
+      --surface: #131a22;
+      --ink: #e9eef4;
+      --muted: #9aa6b4;
+      --line: #222c38;
+      --cobalt: #7d97ff;
+      --cobalt-soft: #1a2442;
+      --bubble-in: #1b2430;
+      --bubble-out: #23315a;
+      --chat-bg: #10161d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Heebo", system-ui, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-inline: 24px; }
+
+  .nav { display: flex; align-items: center; gap: 28px; height: 68px; }
+  .logo { font-family: "Secular One", sans-serif; font-size: 23px; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: var(--cobalt); color: #fff; display: grid; place-items: center; font-size: 17px; }
+  .nav ul { display: flex; gap: 22px; list-style: none; margin: 0; padding: 0; font-size: 15px; color: var(--muted); }
+  .nav ul a { text-decoration: none; }
+  .nav ul a:hover { color: var(--ink); }
+  .nav .end { margin-inline-start: auto; display: flex; align-items: center; gap: 16px; }
+  .lang { font-size: 14px; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; height: 48px; padding-inline: 22px; border-radius: 12px; background: var(--cobalt); color: #fff; font-weight: 500; font-size: 16px; text-decoration: none; white-space: nowrap; transition: transform 160ms ease-out, background-color 160ms ease-out; }
+  .btn:active { transform: scale(0.97); }
+  .btn.soft { background: var(--cobalt-soft); color: var(--cobalt); }
+  .nav .btn { height: 42px; }
+
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding-block: 40px 80px; min-height: calc(100dvh - 68px); }
+  h1 { font-family: "Secular One", sans-serif; font-weight: 400; font-size: clamp(2.6rem, 5.4vw, 4.6rem); line-height: 1.12; margin: 0; }
+  h1 em { font-style: normal; color: var(--cobalt); }
+  .sub { font-size: 19px; color: var(--muted); max-width: 44ch; margin: 18px 0 30px; }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* A real, working slice of the approval flow (not a screenshot) */
+  .stage { position: relative; }
+  .stage > img { width: 74%; aspect-ratio: 4 / 4.6; max-height: 72dvh; object-fit: cover; border-radius: 20px; display: block; margin-inline-start: auto; }
+  .chat {
+    position: absolute; inset-inline-start: 0; bottom: 8%; width: min(360px, 86%);
+    background: var(--chat-bg); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 1px 0 rgb(255 255 255 / .6) inset, 0 24px 48px -20px rgb(15 23 32 / .45);
+  }
+  .chat-head { display: flex; align-items: center; gap: 10px; padding: 2px 4px 8px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .chat-head .mark { width: 26px; height: 26px; font-size: 14px; border-radius: 7px; }
+  .chat-head small { display: block; color: var(--muted); font-size: 12px; line-height: 1.2; }
+  .msg { max-width: 88%; padding: 9px 12px; border-radius: 14px; font-size: 14.5px; line-height: 1.45; background: var(--bubble-in); }
+  .msg.out { background: var(--bubble-out); align-self: flex-end; border-end-end-radius: 4px; }
+  .msg.in { border-end-start-radius: 4px; }
+  .msg .opt { display: flex; justify-content: space-between; gap: 16px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .msg .keys { display: flex; gap: 6px; margin-top: 8px; }
+  .msg .keys span { flex: 1; text-align: center; padding: 5px 0; border-radius: 8px; background: var(--chat-bg); font-weight: 500; font-size: 13px; }
+  .msg .time { display: block; text-align: end; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .msg[hidden] { display: none; }
+
+  .steps { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 0; border-top: 1px solid var(--line); }
+  .steps > div { padding: 36px 24px 48px 0; }
+  .steps > div + div { border-inline-start: 1px solid var(--line); padding-inline-start: 24px; }
+  .steps h2 { font-family: "Secular One", sans-serif; font-weight: 400; font-size: 30px; line-height: 1.2; margin: 0; }
+  .steps h3 { font-size: 18px; margin: 0 0 6px; }
+  .steps p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .steps .t { color: var(--cobalt); font-weight: 700; font-size: 14px; display: block; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .msg.enter { animation: pop 320ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 900px) {
+    .nav ul, .lang { display: none; }
+    .hero { grid-template-columns: 1fr; gap: 28px; padding-block: 20px 48px; min-height: 0; }
+    .stage > img { width: 100%; aspect-ratio: 4 / 3.4; }
+    .chat { position: relative; width: 100%; margin-top: -72px; bottom: auto; }
+    .steps { grid-template-columns: 1fr; }
+    .steps > div, .steps > div + div { padding: 22px 0; border-inline-start: 0; border-top: 1px solid var(--line); padding-inline-start: 0; }
+  }
+</style>
+</head>
+<body>
+<header class="wrap nav">
+  <a class="logo" href="#"><span class="mark" aria-hidden="true">ל</span>מוסך לוי ובניו</a>
+  <ul>
+    <li><a href="#">שירותים</a></li>
+    <li><a href="#">איך זה עובד</a></li>
+    <li><a href="#">טסט</a></li>
+    <li><a href="#">צי לעסקים</a></li>
+    <li><a href="#">שעות ומיקום</a></li>
+  </ul>
+  <div class="end">
+    <span class="lang">עב · ع · Ру</span>
+    <a class="btn" href="https://cal.com/levi-garage/drop-off">קביעת תור</a>
+  </div>
+</header>
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <h1>מצאנו עוד משהו?<br><em>אתה מחליט.</em></h1>
+      <p class="sub">כל תיקון נוסף מגיע אליך בוואטסאפ עם מחיר, ואנחנו מחכים לאישור שלך. מוסך משפחתי בקריות מ-1998.</p>
+      <div class="ctas">
+        <a class="btn" href="https://cal.com/levi-garage/drop-off">קביעת תור</a>
+        <a class="btn soft" href="#whatsapp">וואטסאפ</a>
+      </div>
+    </div>
+    <div class="stage">
+      <img src="../assets/nb/hands.jpg" alt="מכונאי במוסך מחזיק דיסק בלם שחוק, ולידו טלפון" width="928" height="1152">
+      <div class="chat" id="chat" aria-label="דוגמה לאישור תיקון בוואטסאפ">
+        <div class="chat-head"><span class="mark" aria-hidden="true">ל</span><div>מוסך לוי ובניו<small>יונדאי טוסון · ליפט 2</small></div></div>
+        <div class="msg in" hidden>
+          בבדיקה נמצאה נזילה במשאבת המים. בלי תיקון המנוע עלול להתחמם.
+          <div class="opt"><span>1. חלק מקורי</span><b>800 ₪</b></div>
+          <div class="opt"><span>2. חלק חלופי</span><b>550 ₪</b></div>
+          <div class="keys"><span>1</span><span>2</span><span>3 שיחה</span></div>
+          <span class="time">09:12</span>
+        </div>
+        <div class="msg out" hidden>1<span class="time">09:14</span></div>
+        <div class="msg in" hidden>אושר, חלק מקורי. הרכב יהיה מוכן היום ב-15:00, ונעדכן כשהוא מחכה לך.<span class="time">09:14</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div><h2>ככה זה עובד,<br>בלי לחכות על הקו</h2></div>
+    <div><span class="t">מתי שנוח</span><h3>קובעים תור לבד</h3><p>בוחרים שעת מסירה בין 07:00 ל-09:00.</p></div>
+    <div><span class="t">בזמן העבודה</span><h3>מאשרים בוואטסאפ</h3><p>כל תוספת מגיעה עם מחיר. עונים 1 או 2.</p></div>
+    <div><span class="t">כשמוכן</span><h3>מקבלים הודעה</h3><p>לא ניחוש. הודעה אחת, כשהרכב מחכה.</p></div>
+  </section>
+</main>
+<script>
+  // The one motion moment: the approval conversation plays once, the way it happens at the garage.
+  const msgs = [...document.querySelectorAll('#chat .msg')];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) msgs.forEach((m) => (m.hidden = false));
+  else [600, 1900, 2800].forEach((t, i) => setTimeout(() => { msgs[i].hidden = false; msgs[i].classList.add('enter'); }, t));
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מוסך לוי ובניו · כיוון א: לוחית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f3f0;
+    --surface: #ffffff;
+    --ink: #17191c;
+    --muted: #5b6068;
+    --line: #dcddd8;
+    --plate: #f2c230;
+    --plate-ink: #111214;
+    --plate-edge: #1c3f8f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417;
+      --surface: #1a1d21;
+      --ink: #eef0f2;
+      --muted: #a2a8b0;
+      --line: #2a2e34;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Heebo", system-ui, sans-serif; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding-inline: 24px; }
+
+  header { border-block-end: 1px solid var(--line); }
+  .nav { display: flex; align-items: center; gap: 28px; height: 68px; }
+  .logo { font-family: "Karantina", sans-serif; font-weight: 700; font-size: 34px; line-height: 1; text-decoration: none; }
+  .nav ul { display: flex; gap: 22px; list-style: none; margin: 0; padding: 0; font-size: 15px; }
+  .nav ul a { text-decoration: none; color: var(--muted); }
+  .nav ul a:hover { color: var(--ink); }
+  .nav .end { margin-inline-start: auto; display: flex; align-items: center; gap: 16px; }
+  .lang { font-size: 14px; color: var(--muted); }
+  .lang b { color: var(--ink); font-weight: 500; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; height: 44px; padding-inline: 20px;
+    border-radius: 6px; background: var(--ink); color: var(--bg); text-decoration: none;
+    font-weight: 500; font-size: 15px; border: 0; cursor: pointer; white-space: nowrap;
+    transition: transform 160ms ease-out;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+
+  .hero { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 56px; align-items: center; padding-block: 56px 72px; min-height: calc(100dvh - 69px); }
+  h1 {
+    font-family: "Karantina", sans-serif; font-weight: 700; margin: 0;
+    font-size: clamp(3.4rem, 8.5vw, 7rem); line-height: 0.95;
+  }
+  .sub { font-size: 19px; color: var(--muted); max-width: 46ch; margin: 18px 0 32px; }
+
+  /* The plate: the hero's one interaction */
+  .plate-form { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+  .plate {
+    display: flex; align-items: stretch; height: 76px; border-radius: 8px; overflow: hidden;
+    background: var(--plate); box-shadow: 0 0 0 3px var(--plate-ink), 0 14px 30px -12px rgb(17 18 20 / .45);
+    direction: ltr;
+  }
+  .plate .il { width: 34px; background: var(--plate-edge); color: #fff; font: 700 12px/1 "Heebo", sans-serif; display: grid; place-items: end center; padding-block-end: 10px; }
+  .plate input {
+    width: 250px; border: 0; background: transparent; color: var(--plate-ink); text-align: center;
+    font-family: "Karantina", sans-serif; font-weight: 700; font-size: 58px; letter-spacing: .04em;
+    font-variant-numeric: tabular-nums; outline: none; padding: 0 12px;
+  }
+  .plate:focus-within { box-shadow: 0 0 0 3px var(--plate-ink), 0 0 0 7px color-mix(in srgb, var(--plate) 55%, transparent); }
+  .plate-form .btn { height: 76px; padding-inline: 26px; font-size: 17px; }
+  .hint { font-size: 14px; color: var(--muted); margin-top: 12px; }
+
+  .result {
+    margin-top: 22px; display: grid; grid-template-columns: auto 1fr; gap: 4px 18px;
+    padding: 18px 20px; border-radius: 8px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+    max-width: 520px; opacity: 0; transform: translateY(8px);
+    transition: opacity 280ms ease-out, transform 280ms ease-out;
+  }
+  .result[data-show] { opacity: 1; transform: none; }
+  .result dt { color: var(--muted); font-size: 14px; }
+  .result dd { margin: 0; font-weight: 500; }
+  .result .next { grid-column: 1 / -1; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  .photo { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .promise { border-block-start: 1px solid var(--line); padding-block: 64px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .promise h2 { font-family: "Karantina", sans-serif; font-size: 44px; line-height: 1; margin: 0 0 10px; font-weight: 700; }
+  .promise p { margin: 0; color: var(--muted); max-width: 32ch; }
+  .promise .was { font-size: 14px; color: var(--muted); margin-bottom: 10px; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--plate) 80%, var(--ink)); }
+
+  @media (max-width: 900px) {
+    .nav ul, .lang { display: none; }
+    .hero { grid-template-columns: 1fr; gap: 32px; padding-block: 28px 48px; min-height: 0; }
+    .photo { aspect-ratio: 16 / 10; order: -1; }
+    .plate input { width: 190px; font-size: 48px; }
+    .plate-form .btn { width: 100%; justify-content: center; height: 56px; }
+    .promise { grid-template-columns: 1fr; gap: 28px; padding-block: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .result, .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#">מוסך לוי ובניו</a>
+    <ul>
+      <li><a href="#">שירותים</a></li>
+      <li><a href="#">איך זה עובד</a></li>
+      <li><a href="#">טסט</a></li>
+      <li><a href="#">צי לעסקים</a></li>
+      <li><a href="#">שעות ומיקום</a></li>
+    </ul>
+    <div class="end">
+      <span class="lang"><b>עב</b> · ع · Ру</span>
+      <a class="btn" href="https://cal.com/levi-garage/drop-off">קביעת תור</a>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <h1>מה מספר הרכב?<br>מכאן אנחנו ממשיכים.</h1>
+      <p class="sub">מוסך משפחתי בקריות מ-1998. מקלידים מספר רישוי, רואים מה הרכב צריך, וקובעים תור לבד. בלי לחכות על הקו.</p>
+      <form class="plate-form" id="plateForm">
+        <label class="plate">
+          <span class="il" aria-hidden="true">IL</span>
+          <input id="plate" inputmode="numeric" autocomplete="off" aria-label="מספר רישוי" placeholder="00-000-00" maxlength="10">
+        </label>
+        <button class="btn" type="submit">בדיקת הרכב</button>
+      </form>
+      <p class="hint">הנתונים ממאגר משרד התחבורה. המספר לא נשמר אצלנו.</p>
+      <dl class="result" id="result" aria-live="polite">
+        <dt>רכב</dt><dd>סקודה פאביה, 2012</dd>
+        <dt>מנוע</dt><dd>בנזין, קוד מנוע CBZ</dd>
+        <dt>טסט בתוקף עד</dt><dd>31.12.2026</dd>
+        <div class="next">
+          <span>הטסט בעוד כשלושה חודשים. נכין אותו?</span>
+          <a class="btn" href="https://cal.com/levi-garage/drop-off?plate=8215376&service=test">קביעת תור</a>
+        </div>
+      </dl>
+    </div>
+    <figure class="photo" style="margin:0">
+      <img src="../assets/nb/plate-detail.jpg" alt="הצד האחורי של סקודה כסופה במוסך, עם לוחית רישוי צהובה" width="1024" height="1024">
+    </figure>
+  </section>
+
+  <section class="promise">
+    <div>
+      <div class="was">"חייבו על דברים שלא אישרתי"</div>
+      <h2>אין עבודה בלי אישור שלך</h2>
+      <p>מצאנו עוד משהו? תקבל הודעה בוואטסאפ עם המחיר, ותענה 1 או 2. עד אז לא נוגעים.</p>
+    </div>
+    <div>
+      <div class="was">"אי אפשר להשיג אותם בטלפון"</div>
+      <h2>תור בלי שיחה</h2>
+      <p>קובעים לבד, מתי שנוח. שאלות עונים בוואטסאפ, גם אחרי שהמוסך סגור.</p>
+    </div>
+    <div>
+      <div class="was">"אמרו מוכן ב-12 וקיבלתי ב-4"</div>
+      <h2>הודעה כשהרכב מוכן</h2>
+      <p>לא ניחוש בבוקר. הודעה אחת, כשהרכב באמת מחכה לך.</p>
+    </div>
+  </section>
+</main>
+<script>
+  // The one motion moment: the plate types a real example, then the vehicle card rises.
+  const input = document.getElementById('plate');
+  const result = document.getElementById('result');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const demo = '82-153-76';
+  function show() { result.setAttribute('data-show', ''); }
+  if (reduce) { input.value = demo; show(); }
+  else {
+    let i = 0;
+    setTimeout(function type() {
+      input.value = demo.slice(0, ++i);
+      if (i < demo.length) setTimeout(type, demo[i] === '-' ? 60 : 110);
+      else setTimeout(show, 260);
+    }, 700);
+  }
+  document.getElementById('plateForm').addEventListener('submit', (e) => { e.preventDefault(); show(); });
+</script>
+</body>
+</html>

@@ -20,3 +20,9 @@ Thumbs.db
 # מפתח Service Account של GCP (Vertex AI)
 gcp-sa*.json
 *-sa.json
+
+# design work files (large or local-only)
+.playwright-mcp/
+/levi-garage/design/screenshots/
+/levi-garage/design/assets/**/*.png
+/levi-garage/.impeccable/review/

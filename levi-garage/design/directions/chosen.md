@@ -1,0 +1,22 @@
+# Chosen direction
+
+- Name: שלושה דורות (עם הלוחית כחלק השני)
+- Axis:
+  - Layout: full-bleed photographic hero, content anchored bottom-start; below it a plate-lookup section, then varied section families
+  - Type: heritage serif display (justified: family business since 1998, three generations) over a warm humanist sans body
+  - Palette: forest green, cool bone, amber CTA; the license plate keeps its real yellow as an object, not as a second accent
+  - Motion: hero photo settles from a slow push-in while the headline rises line by line (the one authored moment); the plate types a real example when it scrolls into view
+  - Density: 4, airy hero, useful but breathing sections
+- Display face: Frank Ruhl Libre (500, 700, 900), Body face: Assistant (400, 600, 700), Latin pairing: Frank Ruhl Libre / Assistant own Latin; plate digits in Assistant 700 tabular
+- Palette (light / dark):
+  - bg `#eceee9` / `#101713`
+  - surface `#f7f8f5` / `#16201a`
+  - ink `#1b2620` / `#e8ece8`
+  - forest `#1f3b2d` / `#9cc2ab`
+  - amber (CTA) `#d6932a`, CTA text `#1a1408`
+  - plate yellow `#f2c230` (object only)
+- The one motion moment: hero `settle` 2400ms cubic-bezier(0.16,1,0.3,1) scale 1.09 to 1, headline lines `rise` 900ms same curve, 120ms stagger; all under prefers-reduced-motion: no-preference
+- Theme: auto (prefers-color-scheme), both designed
+- Placeholders still in use: all photos are AI-generated (Nano Banana Pro, Vertex) and must be disclosed as illustrative; WhatsApp link pending routing change; phone number fictional
+- Rejected for now (kept as an idea): the playing WhatsApp approval conversation from direction c, for the promise section
+- Confirmed by user: 22.9.2026
