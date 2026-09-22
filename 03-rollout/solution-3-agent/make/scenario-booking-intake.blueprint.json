@@ -1,37 +1,194 @@
 {
   "name": "מוסך לוי — תור חדש (Cal.com ← משרד התחבורה)",
-  "metadata": { "instant": true, "version": 1 },
+  "_note": "ערכים בסוגריים <...> הוסרו מהריפו (כתובת webhook, מפתחות, סיסמה פנימית) ומוגדרים רק ב-Make",
+  "metadata": {
+    "instant": true,
+    "version": 1
+  },
   "flow": [
-    { "id": 1, "module": "gateway:CustomWebHook", "version": 1, "parameters": { "hook": "<webhook: מוסך לוי — Cal.com תורים>", "maxResults": 1 }, "mapper": {} },
-    { "id": 2, "module": "http:MakeRequest", "version": 4,
-      "filter": { "name": "רק תור חדש עם מספר רישוי", "conditions": [[
-        { "a": "{{1.triggerEvent}}", "o": "text:equal", "b": "BOOKING_CREATED" },
-        { "a": "{{1.payload.responses.plate.value}}", "o": "exist" } ]] },
-      "parameters": { "authenticationType": "noAuth" },
-      "mapper": { "url": "https://data.gov.il/api/3/action/datastore_search", "method": "get",
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": "<webhook: מוסך לוי — Cal.com תורים>",
+        "maxResults": 1
+      },
+      "mapper": {}
+    },
+    {
+      "id": 2,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "filter": {
+        "name": "רק תור חדש עם מספר רישוי",
+        "conditions": [
+          [
+            {
+              "a": "{{1.triggerEvent}}",
+              "o": "text:equal",
+              "b": "BOOKING_CREATED"
+            },
+            {
+              "a": "{{1.payload.responses.plate.value}}",
+              "o": "exist"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "authenticationType": "noAuth"
+      },
+      "mapper": {
+        "url": "https://data.gov.il/api/3/action/datastore_search",
+        "method": "get",
         "queryParameters": [
-          { "name": "resource_id", "value": "053cea08-09bc-40ec-8f7a-156f0677aff3" },
-          { "name": "filters", "value": "{\"mispar_rechev\":{{replace(1.payload.responses.plate.value; \"/\D/g\"; emptystring)}}}" },
-          { "name": "limit", "value": "1" } ],
-        "contentType": "", "parseResponse": true, "stopOnHttpError": true } },
-    { "id": 3, "module": "util:SetVariables", "version": 1, "parameters": {},
-      "mapper": { "scope": "roundtrip", "variables": [
-        { "name": "cal_uid", "value": "{{1.payload.uid}}" },
-        { "name": "event", "value": "{{1.triggerEvent}}" },
-        { "name": "drop_off_at", "value": "{{1.payload.startTime}}" },
-        { "name": "customer_name", "value": "{{1.payload.responses.name.value}}" },
-        { "name": "customer_phone", "value": "{{ifempty(1.payload.responses.attendeePhoneNumber.value; 1.payload.responses.phone.value)}}" },
-        { "name": "plate", "value": "{{replace(1.payload.responses.plate.value; \"/\D/g\"; emptystring)}}" },
-        { "name": "service", "value": "{{1.payload.responses.service.value}}" },
-        { "name": "notes", "value": "{{1.payload.responses.notes.value}}" },
-        { "name": "whatsapp_consent", "value": "{{1.payload.responses.whatsapp_consent.value}}" },
-        { "name": "vehicle_found", "value": "{{if(2.data.result.total > 0; true; false)}}" },
-        { "name": "vehicle_make", "value": "{{2.data.result.records[1].tozeret_nm}}" },
-        { "name": "vehicle_model", "value": "{{2.data.result.records[1].kinuy_mishari}}" },
-        { "name": "vehicle_year", "value": "{{2.data.result.records[1].shnat_yitzur}}" },
-        { "name": "engine_code", "value": "{{2.data.result.records[1].degem_manoa}}" },
-        { "name": "fuel", "value": "{{2.data.result.records[1].sug_delek_nm}}" },
-        { "name": "tires", "value": "{{2.data.result.records[1].zmig_kidmi}}" },
-        { "name": "test_valid_until", "value": "{{2.data.result.records[1].tokef_dt}}" } ] } }
+          {
+            "name": "resource_id",
+            "value": "053cea08-09bc-40ec-8f7a-156f0677aff3"
+          },
+          {
+            "name": "filters",
+            "value": "{\"mispar_rechev\":{{replace(1.payload.responses.plate.value; \"/\\D/g\"; emptystring)}}}"
+          },
+          {
+            "name": "limit",
+            "value": "1"
+          }
+        ],
+        "contentType": "",
+        "parseResponse": true,
+        "stopOnHttpError": true
+      }
+    },
+    {
+      "id": 3,
+      "module": "util:SetVariables",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "scope": "roundtrip",
+        "variables": [
+          {
+            "name": "cal_uid",
+            "value": "{{1.payload.uid}}"
+          },
+          {
+            "name": "event",
+            "value": "{{1.triggerEvent}}"
+          },
+          {
+            "name": "drop_off_at",
+            "value": "{{1.payload.startTime}}"
+          },
+          {
+            "name": "customer_name",
+            "value": "{{1.payload.responses.name.value}}"
+          },
+          {
+            "name": "customer_phone",
+            "value": "{{ifempty(1.payload.responses.attendeePhoneNumber.value; 1.payload.responses.phone.value)}}"
+          },
+          {
+            "name": "plate",
+            "value": "{{replace(1.payload.responses.plate.value; \"/\\D/g\"; emptystring)}}"
+          },
+          {
+            "name": "service",
+            "value": "{{1.payload.responses.service.value}}"
+          },
+          {
+            "name": "notes",
+            "value": "{{1.payload.responses.notes.value}}"
+          },
+          {
+            "name": "whatsapp_consent",
+            "value": "{{1.payload.responses.whatsapp_consent.value}}"
+          },
+          {
+            "name": "vehicle_found",
+            "value": "{{if(2.data.result.total > 0; true; false)}}"
+          },
+          {
+            "name": "vehicle_make",
+            "value": "{{2.data.result.records[1].tozeret_nm}}"
+          },
+          {
+            "name": "vehicle_model",
+            "value": "{{2.data.result.records[1].kinuy_mishari}}"
+          },
+          {
+            "name": "vehicle_year",
+            "value": "{{2.data.result.records[1].shnat_yitzur}}"
+          },
+          {
+            "name": "engine_code",
+            "value": "{{2.data.result.records[1].degem_manoa}}"
+          },
+          {
+            "name": "fuel",
+            "value": "{{2.data.result.records[1].sug_delek_nm}}"
+          },
+          {
+            "name": "tires",
+            "value": "{{2.data.result.records[1].zmig_kidmi}}"
+          },
+          {
+            "name": "test_valid_until",
+            "value": "{{2.data.result.records[1].tokef_dt}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "metadata": {
+        "designer": {
+          "name": "שמירה ב-Supabase"
+        }
+      },
+      "parameters": {
+        "authenticationType": "noAuth"
+      },
+      "mapper": {
+        "url": "https://<project>.supabase.co/rest/v1/rpc/intake_booking",
+        "method": "post",
+        "headers": [
+          {
+            "name": "apikey",
+            "value": "<publishable key>"
+          }
+        ],
+        "contentType": "json",
+        "inputMethod": "dataStructure",
+        "bodyDataStructure": "<data structure: levi-garage intake_booking body>",
+        "dataStructureBodyContent": {
+          "p_token": "<intake_token מתוך private.settings>",
+          "p": {
+            "event": "{{3.event}}",
+            "cal_uid": "{{3.cal_uid}}",
+            "drop_off_at": "{{3.drop_off_at}}",
+            "customer_name": "{{3.customer_name}}",
+            "customer_phone": "{{3.customer_phone}}",
+            "whatsapp_consent": "{{3.whatsapp_consent}}",
+            "plate": "{{3.plate}}",
+            "service": "{{3.service}}",
+            "notes": "{{3.notes}}",
+            "vehicle_found": "{{3.vehicle_found}}",
+            "vehicle_make": "{{3.vehicle_make}}",
+            "vehicle_model": "{{3.vehicle_model}}",
+            "vehicle_year": "{{3.vehicle_year}}",
+            "engine_code": "{{3.engine_code}}",
+            "fuel": "{{3.fuel}}",
+            "tires": "{{3.tires}}",
+            "test_valid_until": "{{3.test_valid_until}}"
+          }
+        },
+        "parseResponse": true,
+        "stopOnHttpError": true
+      }
+    }
   ]
 }
