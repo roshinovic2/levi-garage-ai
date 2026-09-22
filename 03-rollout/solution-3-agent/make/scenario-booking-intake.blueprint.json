@@ -1,0 +1,37 @@
+{
+  "name": "מוסך לוי — תור חדש (Cal.com ← משרד התחבורה)",
+  "metadata": { "instant": true, "version": 1 },
+  "flow": [
+    { "id": 1, "module": "gateway:CustomWebHook", "version": 1, "parameters": { "hook": "<webhook: מוסך לוי — Cal.com תורים>", "maxResults": 1 }, "mapper": {} },
+    { "id": 2, "module": "http:MakeRequest", "version": 4,
+      "filter": { "name": "רק תור חדש עם מספר רישוי", "conditions": [[
+        { "a": "{{1.triggerEvent}}", "o": "text:equal", "b": "BOOKING_CREATED" },
+        { "a": "{{1.payload.responses.plate.value}}", "o": "exist" } ]] },
+      "parameters": { "authenticationType": "noAuth" },
+      "mapper": { "url": "https://data.gov.il/api/3/action/datastore_search", "method": "get",
+        "queryParameters": [
+          { "name": "resource_id", "value": "053cea08-09bc-40ec-8f7a-156f0677aff3" },
+          { "name": "filters", "value": "{\"mispar_rechev\":{{replace(1.payload.responses.plate.value; \"/\D/g\"; emptystring)}}}" },
+          { "name": "limit", "value": "1" } ],
+        "contentType": "", "parseResponse": true, "stopOnHttpError": true } },
+    { "id": 3, "module": "util:SetVariables", "version": 1, "parameters": {},
+      "mapper": { "scope": "roundtrip", "variables": [
+        { "name": "cal_uid", "value": "{{1.payload.uid}}" },
+        { "name": "event", "value": "{{1.triggerEvent}}" },
+        { "name": "drop_off_at", "value": "{{1.payload.startTime}}" },
+        { "name": "customer_name", "value": "{{1.payload.responses.name.value}}" },
+        { "name": "customer_phone", "value": "{{ifempty(1.payload.responses.attendeePhoneNumber.value; 1.payload.responses.phone.value)}}" },
+        { "name": "plate", "value": "{{replace(1.payload.responses.plate.value; \"/\D/g\"; emptystring)}}" },
+        { "name": "service", "value": "{{1.payload.responses.service.value}}" },
+        { "name": "notes", "value": "{{1.payload.responses.notes.value}}" },
+        { "name": "whatsapp_consent", "value": "{{1.payload.responses.whatsapp_consent.value}}" },
+        { "name": "vehicle_found", "value": "{{if(2.data.result.total > 0; true; false)}}" },
+        { "name": "vehicle_make", "value": "{{2.data.result.records[1].tozeret_nm}}" },
+        { "name": "vehicle_model", "value": "{{2.data.result.records[1].kinuy_mishari}}" },
+        { "name": "vehicle_year", "value": "{{2.data.result.records[1].shnat_yitzur}}" },
+        { "name": "engine_code", "value": "{{2.data.result.records[1].degem_manoa}}" },
+        { "name": "fuel", "value": "{{2.data.result.records[1].sug_delek_nm}}" },
+        { "name": "tires", "value": "{{2.data.result.records[1].zmig_kidmi}}" },
+        { "name": "test_valid_until", "value": "{{2.data.result.records[1].tokef_dt}}" } ] } }
+  ]
+}

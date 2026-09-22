@@ -1,0 +1,24 @@
+{
+  "triggerEvent": "BOOKING_CREATED",
+  "createdAt": "2026-09-22T12:00:00.000Z",
+  "payload": {
+    "type": "drop-off",
+    "title": "מסירת רכב למוסך בין ישראל ישראלי ומוסך לוי ובניו",
+    "startTime": "2026-09-24T04:45:00Z",
+    "endTime": "2026-09-24T05:00:00Z",
+    "uid": "sample-uid-0001",
+    "bookingId": 1,
+    "status": "ACCEPTED",
+    "location": "מוסך לוי ובניו, הקריות",
+    "attendees": [{ "name": "ישראל ישראלי", "email": "test@example.com", "timeZone": "Asia/Jerusalem", "language": { "locale": "he" } }],
+    "responses": {
+      "name": { "label": "שם", "value": "ישראל ישראלי" },
+      "email": { "label": "אימייל", "value": "test@example.com" },
+      "attendeePhoneNumber": { "label": "טלפון", "value": "+972500000000" },
+      "plate": { "label": "מספר רישוי", "value": "82-153-76" },
+      "service": { "label": "סוג שירות", "value": "טיפול תקופתי" },
+      "notes": { "label": "הערות", "value": "רעש בבלימה" },
+      "whatsapp_consent": { "label": "הסכמה לוואטסאפ", "value": true }
+    }
+  }
+}
