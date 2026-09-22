@@ -1,0 +1,503 @@
+{
+  "model": "gemini-2.5-flash",
+  "via": "vertex",
+  "ranAt": "2026-09-22T15:11:46.592Z",
+  "results": [
+    {
+      "id": "01",
+      "expected": {
+        "id": "01",
+        "said": "בטוסון יש נזילה במשאבת המים. חייבים להחליף, אחרת המנוע יתחמם ויהרס. מקורי 800, חלופי 550. אם מאשרים עכשיו, מוכן היום ב-15:00",
+        "intent": "repair_report",
+        "mustInclude": [
+          "800",
+          "550"
+        ],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "اسمع، بالتوسون في نِزْلَة بمشابة مَيّ. لازم نغيّرها، إذا لا، الموتور بيسخن وبيخرب. في مي قريب 800 وخلو في 500. إذا الزبون بيوافق، هلا السيارة بتكون جاهزة اليوم الساعة 3.",
+        "translation_he": "תשמע, בטוסון יש נזילה במשאבת מים. חייבים להחליף אותה, אם לא, המנוע יתחמם ויהרס. יש אחת בסביבות 800 ויש אחת ב-500. אם הלקוח מסכים, הרכב יהיה מוכן היום בשעה 3.",
+        "intent": "repair_report",
+        "red_list": false,
+        "confidence": 1,
+        "options": [
+          {
+            "label_he": "החלפת משאבת מים (אפשרות א')",
+            "price_ils": 800
+          },
+          {
+            "label_he": "החלפת משאבת מים (אפשרות ב')",
+            "price_ils": 500
+          }
+        ],
+        "unclear_parts": [],
+        "customer_message_he": "שלום, נמצאה נזילה במשאבת המים ברכבך. אם לא תתוקן, המנוע עלול להתחמם ולהיהרס. ישנן שתי אפשרויות לתיקון: אפשרות א' בעלות של כ-800 ש\"ח, ואפשרות ב' בעלות של 500 ש\"ח. הרכב יהיה מוכן היום בשעה 15:00. השיבו 1 לאישור, 2 לדחייה, 3 לשיחה עם המוסך.",
+        "finding_he": "נזילה במשאבת מים",
+        "ready_time": "היום בשעה 15:00",
+        "urgency": "recommended",
+        "vehicle": {
+          "make": "יונדאי",
+          "model": "טוסון",
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": false,
+        "pass": false
+      },
+      "ms": 11481,
+      "tokens": {
+        "promptTokenCount": 1124,
+        "candidatesTokenCount": 507,
+        "totalTokenCount": 2704,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          },
+          {
+            "modality": "AUDIO",
+            "tokenCount": 475
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 507
+          }
+        ],
+        "thoughtsTokenCount": 1073
+      }
+    },
+    {
+      "id": "02",
+      "expected": {
+        "id": "02",
+        "said": "המאזדה 3 שהגיעה לטיפול 30 אלף: הדיסקים והרפידות מקדימה גמורים. צריך להחליף הכול, בערך 1,050 כולל עבודה",
+        "intent": "repair_report",
+        "mustInclude": [
+          "1050"
+        ],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "الماسدا ثلاثة اللي اجت على טיפול 30,000, הדיסקים והרפידות מן קודאם חלסין. لازم نغير الكل تقريبا 1050 مع الشغل.",
+        "translation_he": "המאזדה 3 שהגיעה לטיפול 30,000, הדיסקים והרפידות מקדימה גמורים. צריך להחליף הכל, בערך 1050 כולל עבודה.",
+        "intent": "repair_report",
+        "red_list": false,
+        "confidence": 1,
+        "options": [
+          {
+            "label_he": "החלפת דיסקים ורפידות קדמיים",
+            "price_ils": 1050
+          }
+        ],
+        "unclear_parts": [],
+        "customer_message_he": "שלום, בבדיקה שערכנו למאזדה 3 שלך במסגרת טיפול 30,000, נמצא שהדיסקים והרפידות הקדמיים שחוקים ויש להחליפם. החלפה הכרחית לבטיחות הנסיעה. עלות החלפת דיסקים ורפידות קדמיים, כולל עבודה, היא 1050 ש\"ח. השיבו 1 לאישור, 2 לדחייה, 3 לשיחה עם המוסך.",
+        "finding_he": "הדיסקים והרפידות הקדמיים שחוקים.",
+        "ready_time": null,
+        "urgency": "recommended",
+        "vehicle": {
+          "make": "מאזדה",
+          "model": "3",
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 9196,
+      "tokens": {
+        "promptTokenCount": 949,
+        "candidatesTokenCount": 425,
+        "totalTokenCount": 2361,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          },
+          {
+            "modality": "AUDIO",
+            "tokenCount": 300
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 425
+          }
+        ],
+        "thoughtsTokenCount": 987
+      }
+    },
+    {
+      "id": "03",
+      "expected": {
+        "id": "03",
+        "said": "בקיה, הרצועה סדוקה. לא דחוף היום, אבל כדאי להחליף. 250 ₪. תשאלו את הלקוח (עם רעש רקע)",
+        "intent": "repair_report",
+        "mustInclude": [
+          "250"
+        ],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "בלקאיה הרצועה משקקה مش مستعجلة اليوم بس احسن נغيرها 250 שקל اسألوا الزبון",
+        "translation_he": "בבדיקה הרצועה סדוקה. לא דחוף היום אבל עדיף להחליף אותה. 250 שקל. שאלו את הלקוח.",
+        "intent": "repair_report",
+        "red_list": false,
+        "confidence": 1,
+        "options": [
+          {
+            "label_he": "החלפת רצועה",
+            "price_ils": 250
+          }
+        ],
+        "unclear_parts": [],
+        "customer_message_he": "שלום, בבדיקה נמצא כי הרצועה סדוקה. מומלץ להחליף אותה. עלות החלפת רצועה: 250 ש\"ח. השיבו 1 לאישור, 2 לדחייה, 3 לשיחה עם המוסך.",
+        "finding_he": "בבדיקה נמצא כי הרצועה סדוקה.",
+        "ready_time": null,
+        "urgency": "recommended",
+        "vehicle": {
+          "make": null,
+          "model": null,
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 9879,
+      "tokens": {
+        "promptTokenCount": 874,
+        "candidatesTokenCount": 322,
+        "totalTokenCount": 2274,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "AUDIO",
+            "tokenCount": 225
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 322
+          }
+        ],
+        "thoughtsTokenCount": 1078
+      }
+    },
+    {
+      "id": "04",
+      "expected": {
+        "id": "04",
+        "said": "חיברתי סורק לפיג'ו 208, יש P0301. מה זה ומאיפה להתחיל לבדוק?",
+        "intent": "knowledge_question",
+        "mustInclude": [
+          "P0301"
+        ],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "حطيت הסורק על הפיג'ו 208, طالع P0301. شو يعني هذا؟ ومن وين ابلش افحص؟",
+        "translation_he": "שמתי את הסורק על הפיג'ו 208, יצא P0301. מה זה אומר? ומאיפה להתחיל לבדוק?",
+        "intent": "knowledge_question",
+        "red_list": false,
+        "confidence": 0.98,
+        "options": [],
+        "unclear_parts": [],
+        "customer_message_he": null,
+        "finding_he": "קוד תקלה P0301",
+        "ready_time": null,
+        "urgency": null,
+        "vehicle": {
+          "make": "פיג'ו",
+          "model": "208",
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 7553,
+      "tokens": {
+        "promptTokenCount": 899,
+        "candidatesTokenCount": 224,
+        "totalTokenCount": 1690,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "AUDIO",
+            "tokenCount": 250
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 224
+          }
+        ],
+        "thoughtsTokenCount": 567
+      }
+    },
+    {
+      "id": "05",
+      "expected": {
+        "id": "05",
+        "said": "איפה פילטר המזגן בקיה פיקנטו 2019, ואיך מוציאים אותו?",
+        "intent": "knowledge_question",
+        "mustInclude": [
+          "2019"
+        ],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "وين פילטר המזגן בלקאיה פיקאנטו 2019 وكيف بطلعو",
+        "translation_he": "איפה פילטר המזגן בקאיה פיקנטו 2019 ואיך מוציאים אותו?",
+        "intent": "knowledge_question",
+        "red_list": false,
+        "confidence": 0.95,
+        "options": [],
+        "unclear_parts": [],
+        "customer_message_he": null,
+        "finding_he": null,
+        "ready_time": null,
+        "urgency": null,
+        "vehicle": {
+          "make": "Kia",
+          "model": "Picanto",
+          "year": 2019
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 6484,
+      "tokens": {
+        "promptTokenCount": 824,
+        "candidatesTokenCount": 192,
+        "totalTokenCount": 1627,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          },
+          {
+            "modality": "AUDIO",
+            "tokenCount": 175
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 192
+          }
+        ],
+        "thoughtsTokenCount": 611
+      }
+    },
+    {
+      "id": "06",
+      "expected": {
+        "id": "06",
+        "said": "איזה שמן שמים בסקודה אוקטביה 1.4 טורבו, וכמה ליטר? (עם רעש רקע)",
+        "intent": "knowledge_question",
+        "mustInclude": [
+          "1.4"
+        ],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "اي زيت بنحط بالسكודה אוקטביה 1.4 טורבו وقديش ליטר?",
+        "translation_he": "איזה שמן שמים בסקודה אוקטביה 1.4 טורבו וכמה ליטר?",
+        "intent": "knowledge_question",
+        "red_list": false,
+        "confidence": 1,
+        "options": [],
+        "unclear_parts": [],
+        "customer_message_he": null,
+        "finding_he": null,
+        "ready_time": null,
+        "urgency": null,
+        "vehicle": {
+          "make": "סקודה",
+          "model": "אוקטביה",
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 5826,
+      "tokens": {
+        "promptTokenCount": 849,
+        "candidatesTokenCount": 186,
+        "totalTokenCount": 1562,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          },
+          {
+            "modality": "AUDIO",
+            "tokenCount": 200
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 186
+          }
+        ],
+        "thoughtsTokenCount": 527
+      }
+    },
+    {
+      "id": "07",
+      "expected": {
+        "id": "07",
+        "said": "יש חוט שרוף ליד המחשב של הרכב. אני רוצה לחתוך אותו ולנתק את המחשב, בסדר?",
+        "intent": "red_list_action",
+        "mustInclude": [],
+        "redList": true
+      },
+      "result": {
+        "transcript_original": "في سلك محروق جنب الكمبيوتر تبع السياره بدي اقصه وافصل الكمبيوتر ماشي؟",
+        "translation_he": "יש חוט שרוף ליד המחשב של האוטו, אני רוצה לחתוך אותו ולנתק את המחשב, בסדר?",
+        "intent": "red_list_action",
+        "red_list": true,
+        "confidence": 1,
+        "options": [],
+        "unclear_parts": [],
+        "customer_message_he": null,
+        "finding_he": "חוט שרוף ליד מחשב הרכב",
+        "ready_time": null,
+        "urgency": null,
+        "vehicle": {
+          "make": null,
+          "model": null,
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 12500,
+      "tokens": {
+        "promptTokenCount": 849,
+        "candidatesTokenCount": 199,
+        "totalTokenCount": 1937,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "AUDIO",
+            "tokenCount": 200
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 199
+          }
+        ],
+        "thoughtsTokenCount": 889
+      }
+    },
+    {
+      "id": "08",
+      "expected": {
+        "id": "08",
+        "said": "הלקוח של הפולו אישר או לא? תגיד לי מהר, אני מחכה עם הגלגל בחוץ! (מהר, עם רעש)",
+        "intent": "status_question",
+        "mustInclude": [],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "إزبون تبع ה פולו وافق ولا لا؟ احكي لي بسرعة وأنا مستني مع הגלגל בחוץ.",
+        "translation_he": "הלקוח של הפולו אישר או לא? תגיד לי מהר ואני מחכה עם הגלגל בחוץ.",
+        "intent": "status_question",
+        "red_list": false,
+        "confidence": 0.95,
+        "options": [],
+        "unclear_parts": [],
+        "customer_message_he": null,
+        "finding_he": null,
+        "ready_time": null,
+        "urgency": "urgent",
+        "vehicle": {
+          "make": null,
+          "model": "Polo",
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 7495,
+      "tokens": {
+        "promptTokenCount": 849,
+        "candidatesTokenCount": 192,
+        "totalTokenCount": 1903,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          },
+          {
+            "modality": "AUDIO",
+            "tokenCount": 200
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 192
+          }
+        ],
+        "thoughtsTokenCount": 862
+      }
+    }
+  ]
+}

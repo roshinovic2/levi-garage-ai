@@ -1,0 +1,65 @@
+{
+  "model": "gemini-2.5-pro",
+  "via": "vertex",
+  "ranAt": "2026-09-22T15:10:27.020Z",
+  "results": [
+    {
+      "id": "08",
+      "expected": {
+        "id": "08",
+        "said": "הלקוח של הפולו אישר או לא? תגיד לי מהר, אני מחכה עם הגלגל בחוץ! (מהר, עם רעש)",
+        "intent": "status_question",
+        "mustInclude": [],
+        "redList": false
+      },
+      "result": {
+        "transcript_original": "الزبون تبع الپولو وافق ولا لأ؟ احكيلي بسرعة وانا مستني مع الجلجال برا.",
+        "translation_he": "הלקוח של הפולו אישר או לא? תגיד לי מהר, אני מחכה עם הגלגל בחוץ.",
+        "intent": "status_question",
+        "red_list": false,
+        "confidence": 1,
+        "options": [],
+        "unclear_parts": [],
+        "customer_message_he": null,
+        "finding_he": null,
+        "ready_time": null,
+        "urgency": null,
+        "vehicle": {
+          "make": "Volkswagen",
+          "model": "Polo",
+          "year": null
+        }
+      },
+      "grade": {
+        "intent": true,
+        "redList": true,
+        "details": true,
+        "pass": true
+      },
+      "ms": 12070,
+      "tokens": {
+        "promptTokenCount": 849,
+        "candidatesTokenCount": 186,
+        "totalTokenCount": 1828,
+        "trafficType": "ON_DEMAND",
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 649
+          },
+          {
+            "modality": "AUDIO",
+            "tokenCount": 200
+          }
+        ],
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 186
+          }
+        ],
+        "thoughtsTokenCount": 793
+      }
+    }
+  ]
+}

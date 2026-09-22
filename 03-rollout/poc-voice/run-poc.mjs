@@ -144,14 +144,17 @@ function grade(exp, r) {
   return { ...checks, pass: Object.values(checks).every(Boolean) }
 }
 
+// ONLY=08,03 מריץ רק הקלטות מסוימות (למשל אחרי שגיאת עומס 429)
+const only = process.env.ONLY?.split(",")
+const todo = only ? expected.filter((e) => only.includes(e.id)) : expected
 const file = (id) => path.join(here, "audio", `${id}.m4a`)
-const { model, first } = await pickModel(file(expected[0].id))
+const { model, first } = await pickModel(file(todo[0].id))
 console.log(`model: ${model} via ${saPath ? "Vertex AI" : "AI Studio"}`)
 
 const out = []
-for (const exp of expected) {
+for (const exp of todo) {
   try {
-    const { result, ms, tokens } = exp === expected[0] ? first : await analyze(file(exp.id), model)
+    const { result, ms, tokens } = exp === todo[0] ? first : await analyze(file(exp.id), model)
     const g = grade(exp, result)
     out.push({ id: exp.id, expected: exp, result, grade: g, ms, tokens })
     console.log(`${exp.id}  ${g.pass ? "PASS" : "FAIL"}  intent=${result.intent} red=${result.red_list} conf=${result.confidence} ${ms}ms`)
@@ -161,7 +164,7 @@ for (const exp of expected) {
   }
 }
 
-const outFile = path.join(here, `results-${model}.json`)
+const outFile = path.join(here, `results-${model}${only ? "-" + only.join("_") : ""}.json`)
 fs.writeFileSync(outFile, JSON.stringify({ model, via: saPath ? "vertex" : "ai-studio", ranAt: new Date().toISOString(), results: out }, null, 2))
 const passed = out.filter((o) => o.grade?.pass).length
 console.log(`
