@@ -13,3 +13,6 @@
 .DS_Store
 Thumbs.db
 ~$*
+
+# הקלטות קול של אדם אמיתי (מידע אישי) - נשארות מקומיות בלבד
+/03-rollout/poc-voice/audio/
