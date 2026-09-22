@@ -1,18 +1,59 @@
 // POC: הבנת הודעות קוליות של מכונאים בערבית מדוברת מעורבבת בעברית
 // הרצה: node 03-rollout/poc-voice/run-poc.mjs [model]
-// המפתח נטען מ-levi-garage/.env.local (GEMINI_API_KEY) ולא מודפס לעולם.
+// אימות: GEMINI_SA (Vertex) או GEMINI_API_KEY מ-levi-garage/.env.local. סודות לא מודפסים לעולם.
 // ההקלטות עצמן (audio/) נשארות מקומיות, לא בגיט. נשמרות רק התוצאות.
 
+import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const envFile = path.join(here, "../../levi-garage/.env.local")
-const apiKey = fs.readFileSync(envFile, "utf8").match(/^GEMINI_API_KEY=(.*)$/m)?.[1].trim()
-if (!apiKey) throw new Error("GEMINI_API_KEY missing in levi-garage/.env.local")
+const envText = fs.existsSync(envFile) ? fs.readFileSync(envFile, "utf8") : ""
+const fromEnvFile = (name) => envText.match(new RegExp(`^${name}=(.*)$`, "m"))?.[1].trim()
 
-const model = process.argv[2] ?? "gemini-3.8-flash"
+// שתי דרכים לגשת ל-Gemini:
+// 1. Vertex AI (מועדף, משתמש בקרדיט של GCP): GEMINI_SA = נתיב לקובץ JSON של service account
+// 2. AI Studio (גיבוי): GEMINI_API_KEY
+const saPath = process.env.GEMINI_SA ?? fromEnvFile("GEMINI_SA")
+const apiKey = fromEnvFile("GEMINI_API_KEY")
+if (!saPath && !apiKey) throw new Error("set GEMINI_SA (service-account JSON path) or GEMINI_API_KEY")
+
+// ראשון שזמין מנצח; אפשר לכפות מודל אחד מה-argv
+const models = process.argv[2] ? [process.argv[2]] : saPath ? ["gemini-3-pro", "gemini-2.5-pro"] : ["gemini-3.8-flash"]
+
+// טוקן OAuth מ-service account (JWT חתום, בלי ספריות חיצוניות)
+let cached
+async function vertexToken() {
+  if (cached && cached.exp > Date.now() + 60_000) return cached.token
+  const sa = JSON.parse(fs.readFileSync(saPath, "utf8"))
+  const now = Math.floor(Date.now() / 1000)
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url")
+  const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({
+    iss: sa.client_email, scope: "https://www.googleapis.com/auth/cloud-platform",
+    aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600,
+  })}`
+  const sig = crypto.createSign("RSA-SHA256").update(unsigned).sign(sa.private_key, "base64url")
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${unsigned}.${sig}` }),
+  })
+  const json = await res.json()
+  if (!json.access_token) throw new Error(`token: ${json.error} ${json.error_description ?? ""}`)
+  cached = { token: json.access_token, exp: Date.now() + json.expires_in * 1000, project: sa.project_id }
+  return cached.token
+}
+
+async function endpoint(model) {
+  if (!saPath) return { url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, headers: { "x-goog-api-key": apiKey } }
+  const token = await vertexToken()
+  return {
+    url: `https://aiplatform.googleapis.com/v1/projects/${cached.project}/locations/global/publishers/google/models/${model}:generateContent`,
+    headers: { Authorization: `Bearer ${token}` },
+  }
+}
 
 // מפתח התשובות: מה נאמר בכל הקלטה, ומה חייב לצאת ממנה
 const expected = [
@@ -61,12 +102,13 @@ const schema = {
   required: ["transcript_original", "translation_he", "intent", "red_list", "confidence", "options", "unclear_parts"],
 }
 
-async function analyze(file) {
+async function analyze(file, model) {
   const audio = fs.readFileSync(file).toString("base64")
   const started = Date.now()
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const { url, headers } = await endpoint(model)
+  const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: "user", parts: [{ inlineData: { mimeType: "audio/mp4", data: audio } }, { text: "נתח את ההודעה הקולית." }] }],
@@ -74,11 +116,21 @@ async function analyze(file) {
     }),
   })
   const json = await res.json()
-  if (json.error) throw new Error(`${json.error.code} ${json.error.message}`)
-  return {
-    result: JSON.parse(json.candidates[0].content.parts[0].text),
-    ms: Date.now() - started,
-    tokens: json.usageMetadata,
+  if (json.error) throw Object.assign(new Error(`${json.error.code} ${json.error.message}`), { code: json.error.code })
+  const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("")
+  if (!text) throw new Error(`empty response (${json.candidates?.[0]?.finishReason})`)
+  return { result: JSON.parse(text), ms: Date.now() - started, tokens: json.usageMetadata }
+}
+
+// בוחר את המודל הראשון ברשימה שקיים בפרויקט (404 = לא זמין, עוברים לבא)
+async function pickModel(firstFile) {
+  for (const m of models) {
+    try {
+      return { model: m, first: await analyze(firstFile, m) }
+    } catch (e) {
+      if (e.code === 404 && m !== models.at(-1)) { console.log(`${m} unavailable, falling back`); continue }
+      throw e
+    }
   }
 }
 
@@ -92,11 +144,14 @@ function grade(exp, r) {
   return { ...checks, pass: Object.values(checks).every(Boolean) }
 }
 
+const file = (id) => path.join(here, "audio", `${id}.m4a`)
+const { model, first } = await pickModel(file(expected[0].id))
+console.log(`model: ${model} via ${saPath ? "Vertex AI" : "AI Studio"}`)
+
 const out = []
 for (const exp of expected) {
-  const file = path.join(here, "audio", `${exp.id}.m4a`)
   try {
-    const { result, ms, tokens } = await analyze(file)
+    const { result, ms, tokens } = exp === expected[0] ? first : await analyze(file(exp.id), model)
     const g = grade(exp, result)
     out.push({ id: exp.id, expected: exp, result, grade: g, ms, tokens })
     console.log(`${exp.id}  ${g.pass ? "PASS" : "FAIL"}  intent=${result.intent} red=${result.red_list} conf=${result.confidence} ${ms}ms`)
@@ -107,6 +162,7 @@ for (const exp of expected) {
 }
 
 const outFile = path.join(here, `results-${model}.json`)
-fs.writeFileSync(outFile, JSON.stringify({ model, ranAt: new Date().toISOString(), results: out }, null, 2))
+fs.writeFileSync(outFile, JSON.stringify({ model, via: saPath ? "vertex" : "ai-studio", ranAt: new Date().toISOString(), results: out }, null, 2))
 const passed = out.filter((o) => o.grade?.pass).length
-console.log(`\n${model}: ${passed}/${out.length} passed -> ${path.basename(outFile)}`)
+console.log(`
+${model}: ${passed}/${out.length} passed -> ${path.basename(outFile)}`)
