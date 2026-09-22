@@ -33,14 +33,14 @@ export function Home({ t }: { t: Dict }) {
           </div>
         </section>
 
-        <section className="sec wrap plate-sec" aria-label={t.plate.title}>
+        <section id="plate" className="sec wrap plate-sec" aria-label={t.plate.title}>
           <PlateLookup t={t} />
           <figure className="plate-photo" style={{ margin: 0 }}>
             <Image src="/images/plate-detail.jpg" alt={t.plate.imgAlt} width={1024} height={1024} sizes="(max-width: 900px) 100vw, 45vw" />
           </figure>
         </section>
 
-        <section className="sec promise" aria-labelledby="promise-title">
+        <section id="promise" className="sec promise" aria-labelledby="promise-title">
           <div className="wrap">
             <h2 id="promise-title" className="sec-title">{t.promise.title}</h2>
             <p className="sec-sub">{t.promise.sub}</p>
@@ -79,6 +79,7 @@ export function Home({ t }: { t: Dict }) {
 
         <section id="services" className="sec wrap" aria-labelledby="services-title">
           <h2 id="services-title" className="sec-title">{t.services.title}</h2>
+          <p className="sec-sub">{t.services.sub}</p>
           <div className="board">
             {t.services.groups.map((g) => (
               <div key={g.name}>
@@ -86,17 +87,23 @@ export function Home({ t }: { t: Dict }) {
                 <ul>
                   {g.items.map((it) => (
                     <li key={it.name}>
-                      <span>{it.name}</span>
-                      <span className="price">
-                        {it.price ? (<>{t.services.from}<b className="num">{it.price}</b> ₪</>) : t.services.byCheck}
-                      </span>
+                      <div className="board-row">
+                        <span className="board-name">{it.name}</span>
+                        {it.price && (
+                          <span className="price">{t.services.from}<b className="num">{it.price}</b> ₪</span>
+                        )}
+                      </div>
+                      <p className="board-desc">{it.desc}</p>
                     </li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
-          <p className="board-note"><ShieldCheck aria-hidden />{t.services.note}</p>
+          <div className="board-note">
+            <p><ShieldCheck aria-hidden />{t.services.note}</p>
+            <a className="btn" href={bookingLink()}>{t.nav.book}</a>
+          </div>
         </section>
 
         <section id="test" className="wrap" aria-labelledby="test-title">
@@ -115,12 +122,14 @@ export function Home({ t }: { t: Dict }) {
           </div>
         </section>
 
-        <section className="sec wrap family" aria-labelledby="family-title">
+        <section id="family" className="sec wrap family" aria-labelledby="family-title">
           <figure style={{ margin: 0 }}>
             <Image src="/images/family.jpg" alt={t.family.imgAlt} width={928} height={1152} sizes="(max-width: 900px) 100vw, 42vw" />
           </figure>
           <div>
-            <h2 id="family-title" className="sec-title">{t.family.title}</h2>
+            <h2 id="family-title" className="sec-title">
+              {t.family.title.split(/(?<=\.) /).map((s) => (<span key={s} className="ln">{s} </span>))}
+            </h2>
             <p>{t.family.p1}</p>
             <p>{t.family.p2}</p>
             <div className="gens">
@@ -135,6 +144,12 @@ export function Home({ t }: { t: Dict }) {
             <div className="fleet-box">
               <h2 id="fleet-title">{t.fleet.title}</h2>
               <p>{t.fleet.body}</p>
+              <p className="fleet-who">{t.fleet.who}</p>
+              <dl className="fleet-stats">
+                {t.fleet.stats.map((s) => (
+                  <div key={s.l}><dt className="num"><span className="ltr">{s.n}</span></dt><dd>{s.l}</dd></div>
+                ))}
+              </dl>
               <ul>
                 {t.fleet.points.map((p) => (<li key={p}><Check aria-hidden />{p}</li>))}
               </ul>

@@ -29,7 +29,8 @@ export function SiteHeader({ t, overPhoto = true }: { t: Dict; overPhoto?: boole
   const [open, setOpen] = useState(false)
   const sentinel = useRef<HTMLDivElement>(null)
 
-  // Solid once the hero photo is scrolled away. IntersectionObserver, never a scroll listener.
+  // Transparent only at the very top, over the photo. Solid from the first ~40px of scroll, so nothing
+  // from the hero (buttons, the 1998) ever shows through the bar. IntersectionObserver, never a scroll listener.
   useEffect(() => {
     if (!overPhoto || !sentinel.current) return
     const io = new IntersectionObserver(([e]) => setSolid(!e.isIntersecting), { rootMargin: "-76px 0px 0px 0px" })
@@ -50,9 +51,12 @@ export function SiteHeader({ t, overPhoto = true }: { t: Dict; overPhoto?: boole
 
   const home = t.lang === "he" ? "/" : `/${t.lang}`
   const links = [
-    { href: `${home}#services`, label: t.nav.services },
+    { href: `${home}#plate`, label: t.nav.plate },
+    { href: `${home}#promise`, label: t.nav.promise },
     { href: `${home}#how`, label: t.nav.how },
+    { href: `${home}#services`, label: t.nav.services },
     { href: `${home}#test`, label: t.nav.test },
+    { href: `${home}#family`, label: t.nav.family },
     { href: `${home}#fleet`, label: t.nav.fleet },
     { href: `${home}#visit`, label: t.nav.visit },
   ]
@@ -68,7 +72,7 @@ export function SiteHeader({ t, overPhoto = true }: { t: Dict; overPhoto?: boole
           </Link>
           <ul className="nav-links">
             {links.map((l) => (
-              <li key={l.href}><a href={l.href}>{l.label}</a></li>
+              <li key={l.href}><a href={l.href} onClick={() => setSolid(true)}>{l.label}</a></li>
             ))}
           </ul>
           <div className="nav-end">
@@ -83,12 +87,12 @@ export function SiteHeader({ t, overPhoto = true }: { t: Dict; overPhoto?: boole
       <div id="mobile-menu" className="mobile-menu" data-open={open ? "" : undefined} hidden={!open}>
         <ul>
           {links.map((l) => (
-            <li key={l.href}><a href={l.href} onClick={() => setOpen(false)}>{l.label}</a></li>
+            <li key={l.href}><a href={l.href} onClick={() => { setOpen(false); setSolid(true) }}>{l.label}</a></li>
           ))}
         </ul>
         <LangLinks current={t.lang} label={t.footer.langs} />
       </div>
-      {overPhoto && <div ref={sentinel} aria-hidden style={{ position: "absolute", top: 0, height: "calc(100dvh - 120px)", width: 1 }} />}
+      {overPhoto && <div ref={sentinel} aria-hidden style={{ position: "absolute", top: 0, height: 120, width: 1 }} />}
     </>
   )
 }

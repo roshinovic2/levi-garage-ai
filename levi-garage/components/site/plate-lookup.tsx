@@ -65,6 +65,7 @@ export function PlateLookup({ t }: { t: Dict }) {
         if (!e.isIntersecting || typed.current) return
         typed.current = true
         io.disconnect()
+        if (el.value || document.activeElement === el) return // the visitor got here first
         if (reduce) {
           setValue(DEMO)
           lookup(DEMO)
@@ -76,7 +77,7 @@ export function PlateLookup({ t }: { t: Dict }) {
           i += 1
           setValue(DEMO.slice(0, i))
           if (i < DEMO.length) setTimeout(tick, DEMO[i] === "-" ? 60 : 105)
-          else setTimeout(() => lookup(DEMO), 250)
+          else setTimeout(() => document.activeElement !== el && lookup(DEMO), 250)
         }
         setTimeout(tick, 450)
       },
@@ -108,11 +109,15 @@ export function PlateLookup({ t }: { t: Dict }) {
           <input
             ref={input}
             value={value}
-            onChange={(e) => setValue(formatPlate(e.target.value.replace(/\D/g, "")))}
+            onChange={(e) => {
+              setValue(formatPlate(e.target.value.replace(/\D/g, "")))
+              // A new number: the previous result no longer applies.
+              if (state.kind !== "loading") setState({ kind: "idle" })
+            }}
             inputMode="numeric"
             autoComplete="off"
             aria-label={t.plate.label}
-            placeholder="00-000-00"
+            placeholder="000-00-000"
             maxLength={10}
             dir="ltr"
           />

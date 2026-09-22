@@ -112,6 +112,7 @@ export function AskUs({ t }: { t: Dict }) {
       <a
         className="btn ask-fab"
         href="#ask"
+        aria-label={t.ask.open}
         hidden={fabHidden}
         onClick={() => setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 450)}
       >
