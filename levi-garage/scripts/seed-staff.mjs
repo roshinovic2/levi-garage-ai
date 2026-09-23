@@ -13,9 +13,9 @@ if (!url || !secret) {
   process.exit(1)
 }
 
-// סיסמה קצרה ונוחה להקלדה בהדגמה מול קהל. Supabase דורש 6 תווים לפחות,
-// ולכן test1 נפסל ו-test123 הוא הקרוב ביותר.
-const password = process.env.STAFF_DEMO_PASSWORD || "test123"
+// סיסמה קצרה ונוחה להקלדה בהדגמה מול קהל, אבל לא אחת מאלה שמנהל הסיסמאות
+// של כרום מזהה כסיסמה דלופה ומקפיץ עליה אזהרה אדומה באמצע ההצגה.
+const password = process.env.STAFF_DEMO_PASSWORD || "levi-2026"
 
 const TEAM = [
   { email: "test1@test.com", full_name: "דניאל לוי", role: "manager", lift: null, lang: "he" },
