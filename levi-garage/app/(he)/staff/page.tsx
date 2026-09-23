@@ -56,9 +56,13 @@ export default async function StaffBoard() {
             {staff.lift ? ` · ליפט ${staff.lift}` : ""}
           </p>
         </div>
-        <form action={signOut}>
-          <button className="btn quiet" type="submit">יציאה</button>
-        </form>
+        <div className="staff-nav">
+          {staff.role === "mechanic" && <Link className="btn quiet" href="/staff/lift">הליפט שלי</Link>}
+          <Link className="btn quiet" href="/staff/fleets">ציים</Link>
+          <form action={signOut}>
+            <button className="btn quiet" type="submit">יציאה</button>
+          </form>
+        </div>
       </header>
 
       {waiting.length > 0 && (
