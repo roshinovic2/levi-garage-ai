@@ -6,9 +6,17 @@ import { roleLabel, type StaffMember } from "@/lib/staff/session"
 // פס עליון אחד לכל מסכי הצוות, כדי שתמיד יהיה ברור מי מחובר ואיך חוזרים.
 // המכונאי לא צריך ציים ומדדים, ולכן הוא לא רואה אותם.
 
-export function TopBar({ staff, current }: { staff: StaffMember; current: "board" | "lift" | "fleets" | "dashboard" | "other" }) {
+export function TopBar({
+  staff,
+  current,
+}: {
+  staff: StaffMember
+  current: "board" | "floor" | "lift" | "fleets" | "dashboard" | "other"
+}) {
   const links: { href: string; label: string; key: string }[] = [
     { href: "/staff", label: "לוח היום", key: "board" },
+    // גם מכונאי רואה את המפה: היא עונה לו על "איפה יש ליפט פנוי" בלי לשאול.
+    { href: "/staff/floor", label: "מפת המוסך", key: "floor" },
     ...(staff.role === "mechanic" ? [{ href: "/staff/lift", label: "הליפט שלי", key: "lift" }] : []),
     ...(staff.role !== "mechanic"
       ? [

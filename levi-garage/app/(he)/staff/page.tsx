@@ -3,8 +3,9 @@ import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
-import { fmtTime } from "@/lib/staff/format"
+import { elapsed, fmtTime } from "@/lib/staff/format"
 import { TopBar } from "@/components/staff/top-bar"
+import { Since } from "@/components/staff/since"
 import { openJobCard, setJobStatus } from "./actions"
 
 export const metadata: Metadata = { title: "לוח היום | מוסך לוי ובניו", robots: { index: false, follow: false } }
@@ -33,7 +34,7 @@ export default async function StaffBoard() {
   const [{ data: cards }, { data: booked }] = await Promise.all([
     supabase
       .from("job_cards")
-      .select("id, plate, vehicle_make, vehicle_model, vehicle_year, status, lift, opened_at, customer_name")
+      .select("id, plate, vehicle_make, vehicle_model, vehicle_year, status, lift, opened_at, lift_since, status_since, customer_name")
       .not("status", "in", "(delivered,cancelled)")
       .order("opened_at", { ascending: true }),
     supabase
@@ -57,21 +58,23 @@ export default async function StaffBoard() {
 
       <header className="board-head">
         <h1>לוח היום</h1>
-        <p>כל רכב שנמצא אצלנו עכשיו, ומה הצעד הבא בכל אחד.</p>
+        <p>
+          כל רכב שנמצא אצלנו עכשיו, ומה הצעד הבא בכל אחד. איפה כל אחד עומד פיזית, ב<Link href="/staff/floor">מפת המוסך</Link>.
+        </p>
       </header>
 
       <div className="board-counts" aria-label="סיכום">
         <span className={waiting.length ? "hot" : ""}>
-          <b className="num">{waiting.length}</b> מחכים ללקוח
+          <b className="num">{waiting.length}</b> {waiting.length === 1 ? "מחכה ללקוח" : "מחכים ללקוח"}
         </span>
         <span>
           <b className="num">{working.length}</b> בעבודה
         </span>
         <span>
-          <b className="num">{ready.length}</b> מוכנים
+          <b className="num">{ready.length}</b> {ready.length === 1 ? "מוכן" : "מוכנים"}
         </span>
         <span>
-          <b className="num">{arriving.length}</b> עוד לא הגיעו
+          <b className="num">{arriving.length}</b> {arriving.length === 1 ? "עוד לא הגיע" : "עוד לא הגיעו"}
         </span>
       </div>
 
@@ -87,7 +90,8 @@ export default async function StaffBoard() {
                   <b>{carName(c)}</b>
                   <span className="staff-meta">
                     {c.customer_name || "ללא שם"}
-                    {c.lift ? ` · ליפט ${c.lift}` : ""} · נכנס ב-{fmtTime(c.opened_at)}
+                    {c.lift ? ` · ליפט ${c.lift}` : ""} · מחכה לתשובה{" "}
+                    <Since iso={c.status_since} initial={elapsed(c.status_since)} />
                   </span>
                 </div>
                 <Link className="btn quiet" href={`/staff/job/${c.id}`}>מה נשלח</Link>
@@ -107,7 +111,10 @@ export default async function StaffBoard() {
                 <Plate value={c.plate} />
                 <div>
                   <b>{carName(c)}</b>
-                  <span className="staff-meta">{c.customer_name || "ללא שם"}</span>
+                  <span className="staff-meta">
+                    {c.customer_name || "ללא שם"} · מוכן כבר{" "}
+                    <Since iso={c.status_since} initial={elapsed(c.status_since)} />
+                  </span>
                 </div>
                 <form action={setJobStatus}>
                   <input type="hidden" name="job_id" value={c.id} />
@@ -132,7 +139,8 @@ export default async function StaffBoard() {
                 <div>
                   <b>{carName(c)}</b>
                   <span className="staff-meta">
-                    {c.lift ? `ליפט ${c.lift}` : "בלי ליפט"} · נכנס ב-{fmtTime(c.opened_at)}
+                    {c.lift ? `ליפט ${c.lift}` : "בלי ליפט"} · נכנס ב-{fmtTime(c.opened_at)} · כבר{" "}
+                    <Since iso={c.opened_at} initial={elapsed(c.opened_at)} />
                   </span>
                 </div>
                 <Link className="btn quiet" href={`/staff/job/${c.id}`}>הכרטיס</Link>
