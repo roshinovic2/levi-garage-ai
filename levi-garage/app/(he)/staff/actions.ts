@@ -1,5 +1,7 @@
 "use server"
 
+import { randomBytes } from "node:crypto"
+
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
@@ -162,5 +164,53 @@ export async function setMyLift(formData: FormData) {
 
   revalidatePath("/staff/lift")
   revalidatePath("/staff")
+  revalidatePath("/staff/floor")
+}
+
+/**
+ * המסכים התלויים. הטוקן הוא כל ההגנה של מסך חדר ההמתנה, ולכן חייבת להיות
+ * דרך לבטל אותו בלחיצה: אם מישהו צילם את הכתובת, או שהמסך הוחלף, דניאל לא
+ * אמור לפתוח SQL כדי לסגור אותה.
+ */
+function newToken() {
+  return randomBytes(18).toString("hex")
+}
+
+export async function addDisplay(formData: FormData) {
+  await requireManager()
+  const name = String(formData.get("name") || "").trim()
+  if (!name) return
+
+  const supabase = await createClient()
+  await supabase.from("displays").insert({ kind: "lobby", name, token: newToken() })
+
+  revalidatePath("/staff/screens")
+  revalidatePath("/staff/floor")
+}
+
+/** מנפיק קישור חדש. מהרגע הזה הכתובת הישנה מפסיקה לעבוד. */
+export async function rotateDisplayToken(formData: FormData) {
+  await requireManager()
+  const id = Number(formData.get("display_id"))
+  if (!id) return
+
+  const supabase = await createClient()
+  await supabase.from("displays").update({ token: newToken() }).eq("id", id)
+
+  revalidatePath("/staff/screens")
+  revalidatePath("/staff/floor")
+}
+
+/** מכבה או מדליק מסך. מסך כבוי מציג "הקישור לא בתוקף". */
+export async function setDisplayActive(formData: FormData) {
+  await requireManager()
+  const id = Number(formData.get("display_id"))
+  const active = String(formData.get("active")) === "1"
+  if (!id) return
+
+  const supabase = await createClient()
+  await supabase.from("displays").update({ active }).eq("id", id)
+
+  revalidatePath("/staff/screens")
   revalidatePath("/staff/floor")
 }

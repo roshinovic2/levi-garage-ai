@@ -446,7 +446,9 @@ export default async function FloorPage({ searchParams }: { searchParams: Promis
               </a>
             </span>
           ))}
-          {" — פותחים פעם אחת על המסך עצמו ומשאירים. הם מתרעננים לבד."}
+          {" — פותחים פעם אחת על המסך עצמו ומשאירים. "}
+          <Link href="/staff/screens">ניהול המסכים</Link>
+          {"."}
         </p>
       )}
     </main>
