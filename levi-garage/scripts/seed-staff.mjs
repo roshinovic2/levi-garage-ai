@@ -13,14 +13,19 @@ if (!url || !secret) {
   process.exit(1)
 }
 
-const password = process.env.STAFF_DEMO_PASSWORD || `Levi-${randomBytes(4).toString("hex")}!`
+// סיסמה קצרה ונוחה להקלדה בהדגמה מול קהל. Supabase דורש 6 תווים לפחות,
+// ולכן test1 נפסל ו-test123 הוא הקרוב ביותר.
+const password = process.env.STAFF_DEMO_PASSWORD || "test123"
 
 const TEAM = [
-  { email: "daniel@levi-garage.demo", full_name: "דניאל לוי", role: "manager", lift: null, lang: "he" },
-  { email: "avi@levi-garage.demo", full_name: "אבי לוי", role: "owner", lift: null, lang: "he" },
-  { email: "samer@levi-garage.demo", full_name: "סאמר", role: "mechanic", lift: 2, lang: "ar" },
-  { email: "alex@levi-garage.demo", full_name: "אלכס", role: "mechanic", lift: 3, lang: "ru" },
+  { email: "test1@test.com", full_name: "דניאל לוי", role: "manager", lift: null, lang: "he" },
+  { email: "test2@test.com", full_name: "סאמר", role: "mechanic", lift: 2, lang: "ar" },
+  { email: "test3@test.com", full_name: "אבי לוי", role: "owner", lift: null, lang: "he" },
+  { email: "test4@test.com", full_name: "אלכס", role: "mechanic", lift: 3, lang: "ru" },
 ]
+
+// המשתמשים הישנים, מלפני שעברנו לכתובות הקצרות. נמחקים בהרצה הראשונה.
+const RETIRED = ["daniel@levi-garage.demo", "avi@levi-garage.demo", "samer@levi-garage.demo", "alex@levi-garage.demo"]
 
 const admin = (path, init = {}) =>
   fetch(`${url}${path}`, {
@@ -75,14 +80,19 @@ async function upsertStaffRow(id, person) {
   if (!res.ok) throw new Error(`staff row ${person.email}: ${res.status} ${await res.text()}`)
 }
 
+for (const email of RETIRED) {
+  const old = await findUser(email)
+  if (!old) continue
+  const res = await admin(`/auth/v1/admin/users/${old.id}`, { method: "DELETE" })
+  // בלי הבדיקה הזו מחיקה שנכשלת נראית כמו הצלחה, ומשתמש ישן ממשיך לעבוד.
+  console.log(res.ok ? `· הוסר משתמש ישן: ${email}` : `✗ לא הצלחתי להסיר את ${email}: ${res.status} ${await res.text()}`)
+}
+
 for (const person of TEAM) {
   const id = await upsertUser(person)
   await upsertStaffRow(id, person)
   console.log(`✓ ${person.full_name} (${person.role}${person.lift ? `, ליפט ${person.lift}` : ""}) - ${person.email}`)
 }
 
-console.log(
-  process.env.STAFF_DEMO_PASSWORD
-    ? "\nהסיסמה נלקחה מ-STAFF_DEMO_PASSWORD."
-    : `\nסיסמה להדגמה (נוצרה עכשיו, שמור אותה): ${password}`
-)
+console.log(`
+סיסמה לכולם: ${password}`)

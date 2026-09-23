@@ -9,10 +9,12 @@ import { getStaff, requireStaff, requireManager } from "@/lib/staff/session"
 // כל הפעולות של אזור הצוות עוברות כאן. הן רצות בשרת בזהות של המשתמש המחובר,
 // ולכן ה-RLS והפונקציות במסד אוכפים אותן שוב, גם אם מישהו יקרא להן ישירות.
 
-export async function signIn(_prev: unknown, formData: FormData) {
+// הטופס עובד גם בלי JavaScript: הוא נשלח לשרת, והשגיאה חוזרת בכתובת.
+// זה חשוב במוסך, על טלפון ישן ועל רשת איטית.
+export async function signIn(formData: FormData) {
   const email = String(formData.get("email") || "").trim()
   const password = String(formData.get("password") || "")
-  if (!email || !password) return { error: "צריך אימייל וסיסמה." }
+  if (!email || !password) redirect("/staff/login?e=1")
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -20,7 +22,7 @@ export async function signIn(_prev: unknown, formData: FormData) {
     // בלוג של השרת רואים למה באמת. למשתמש אומרים הודעה אחת לכל סוגי הכישלון,
     // כדי לא להסגיר אילו כתובות קיימות.
     console.error("staff sign-in failed:", error.status, error.code, error.message)
-    return { error: "האימייל או הסיסמה לא נכונים." }
+    redirect("/staff/login?e=1")
   }
 
   // מכונאי נוחת ישר על הליפט שלו: זה כל המסך שהוא צריך. דניאל נוחת על הלוח.
