@@ -7,6 +7,7 @@ import { elapsed, fmtMinutes, fmtTime, minutesSince } from "@/lib/staff/format"
 import { TopBar } from "@/components/staff/top-bar"
 import { Since } from "@/components/staff/since"
 import { AutoRefresh } from "@/components/staff/auto-refresh"
+import { TOO_LONG, stageLabel, type Stage } from "@/lib/staff/stages"
 import { assignLift, openJobCard, setJobStatus } from "../actions"
 
 export const metadata: Metadata = { title: "מפת המוסך | מוסך לוי ובניו", robots: { index: false, follow: false } }
@@ -22,9 +23,7 @@ export const metadata: Metadata = { title: "מפת המוסך | מוסך לוי 
 
 const LIFTS = [1, 2, 3, 4] as const
 
-// מתי שלב הופך לתקוע. החלטה, לא מדידה, ולכן במקום אחד: אחרי שבוע אמיתי
-// יושבים עם דניאל ומכוונים. כתום שתמיד דולק הוא כתום שאף אחד לא קורא.
-const TOO_LONG = { lift: 240, noLift: 30, quote: 30, customer: 120, ready: 120 }
+const STAGES: Stage[] = ["booked", "working", "waiting", "done"]
 
 type Card = {
   id: number
@@ -67,15 +66,24 @@ function LiftPicker({ free, name, defaultLift }: { free: number[]; name: string;
   )
 }
 
-export default async function FloorPage() {
+export default async function FloorPage({ searchParams }: { searchParams: Promise<{ stage?: string }> }) {
   const staff = await requireStaff()
+
+  // הטאב נבחר בכתובת ולא במצב בצד הלקוח, ולכן הוא עובד לפני ש-JavaScript
+  // נטען, נשמר ברענון, וכל אחד יכול לשלוח לחבר קישור לשלב שהוא מדבר עליו.
+  // בכוונה אין סרט נע כאן: המכונאי עומד ללחוץ, והחלפת טאב מתחת לאצבע
+  // הייתה שולחת אותו ללחוץ על הרכב של מישהו אחר.
+  const { stage } = await searchParams
+  const only = STAGES.includes(stage as Stage) ? (stage as Stage) : null
+  const show = (s: Stage) => only === null || only === s
+  const colClass = only ? "chain-col solo" : "chain-col"
   const supabase = await createClient()
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
 
-  const [{ data: cards }, { data: crew }, { data: booked }, { count: deliveredToday }] = await Promise.all([
+  const [{ data: cards }, { data: crew }, { data: booked }, { count: deliveredToday }, { data: displays }] = await Promise.all([
     supabase
       .from("job_cards")
       .select(
@@ -97,6 +105,9 @@ export default async function FloorPage() {
       .select("id", { count: "exact", head: true })
       .eq("status", "delivered")
       .gte("delivered_at", today.toISOString()),
+    // הכתובות של המסכים התלויים. הן לא נכתבות בקוד ולא נשלחות בהודעה:
+    // מי שצריך להדליק מסך, פותח אותן מכאן.
+    supabase.from("displays").select("kind, name, token").eq("active", true),
   ])
 
   const all = (cards ?? []) as Card[]
@@ -128,6 +139,17 @@ export default async function FloorPage() {
         </p>
       </header>
 
+      <nav className="tabs" aria-label="שלב">
+        <Link href="/staff/floor" aria-current={only === null ? "page" : undefined}>
+          הכול
+        </Link>
+        {STAGES.map((s) => (
+          <Link key={s} href={`/staff/floor?stage=${s}`} aria-current={only === s ? "page" : undefined}>
+            {stageLabel[s]}
+          </Link>
+        ))}
+      </nav>
+
       {/* פס התאים. הוא היחיד שיודע להראות גם תא ריק, וזה מה שמניע את כל השרשרת. */}
       <ul className="strip" aria-label="הליפטים">
         {LIFTS.map((n) => {
@@ -151,9 +173,10 @@ export default async function FloorPage() {
         })}
       </ul>
 
-      <div className="chain">
+      <div className={only ? "chain solo" : "chain"}>
         {/* ---------- 1. מוזמנים להיום ---------- */}
-        <section className="chain-col" aria-labelledby="c1">
+        {show("booked") && (
+        <section className={colClass} aria-labelledby="c1">
           <div className="chain-head">
             <h2 id="c1">מוזמנים להיום</h2>
             <span className="chain-count num">{arriving.length}</span>
@@ -193,8 +216,11 @@ export default async function FloorPage() {
           )}
         </section>
 
+        )}
+
         {/* ---------- 2. בטיפול ---------- */}
-        <section className="chain-col" aria-labelledby="c2">
+        {show("working") && (
+        <section className={colClass} aria-labelledby="c2">
           <div className="chain-head">
             <h2 id="c2">בטיפול</h2>
             <span className="chain-count num">{working}</span>
@@ -276,8 +302,11 @@ export default async function FloorPage() {
           )}
         </section>
 
+        )}
+
         {/* ---------- 3. מחכים לתשובה ---------- */}
-        <section className="chain-col" aria-labelledby="c3">
+        {show("waiting") && (
+        <section className={colClass} aria-labelledby="c3">
           <div className="chain-head">
             <h2 id="c3">מחכים לתשובה</h2>
             <span className="chain-count num">{waiting}</span>
@@ -352,8 +381,11 @@ export default async function FloorPage() {
           )}
         </section>
 
+        )}
+
         {/* ---------- 4. הסתיים ---------- */}
-        <section className="chain-col" aria-labelledby="c4">
+        {show("done") && (
+        <section className={colClass} aria-labelledby="c4">
           <div className="chain-head">
             <h2 id="c4">הסתיים</h2>
             <span className="chain-count num">{done.length}</span>
@@ -397,7 +429,26 @@ export default async function FloorPage() {
           </p>
           {(deliveredToday ?? 0) > 0 && <p className="chain-note">נמסרו היום: {deliveredToday}</p>}
         </section>
+        )}
       </div>
+
+      {staff.role !== "mechanic" && (displays ?? []).length > 0 && (
+        <p className="chain-note screens-note">
+          המסכים התלויים:{" "}
+          <Link href="/staff/wall" target="_blank" rel="noreferrer">
+            לוח הסדנה
+          </Link>
+          {(displays ?? []).map((d) => (
+            <span key={d.token}>
+              {" · "}
+              <a href={`/lobby/${d.token}`} target="_blank" rel="noreferrer">
+                {d.name}
+              </a>
+            </span>
+          ))}
+          {" — פותחים פעם אחת על המסך עצמו ומשאירים. הם מתרעננים לבד."}
+        </p>
+      )}
     </main>
   )
 }

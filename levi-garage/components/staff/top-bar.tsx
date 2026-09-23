@@ -11,12 +11,14 @@ export function TopBar({
   current,
 }: {
   staff: StaffMember
-  current: "board" | "floor" | "lift" | "fleets" | "dashboard" | "other"
+  current: "board" | "floor" | "wall" | "lift" | "fleets" | "dashboard" | "other"
 }) {
   const links: { href: string; label: string; key: string }[] = [
     { href: "/staff", label: "לוח היום", key: "board" },
     // גם מכונאי רואה את המפה: היא עונה לו על "איפה יש ליפט פנוי" בלי לשאול.
     { href: "/staff/floor", label: "מפת המוסך", key: "floor" },
+    // הכתובת שפותחים פעם אחת על הטלוויזיה בסדנה ומשאירים.
+    { href: "/staff/wall", label: "לוח הסדנה", key: "wall" },
     ...(staff.role === "mechanic" ? [{ href: "/staff/lift", label: "הליפט שלי", key: "lift" }] : []),
     ...(staff.role !== "mechanic"
       ? [

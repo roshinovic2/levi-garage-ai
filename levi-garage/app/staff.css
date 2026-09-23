@@ -482,3 +482,184 @@ select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5
 /* "סיימתי, צריך אישור" בדף המכונאי: משני לכפתור ההקלטה, אבל באותו רוחב. */
 .lift-done { margin-top: 10px; }
 .lift-done .btn { width: 100%; min-height: 48px; }
+
+/* ---------- טאבים של שלב, במסך העבודה ---------- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-bottom: 4px;
+}
+.tabs a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 14.5px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.tabs a[aria-current="page"] { background: var(--ink); color: var(--surface); box-shadow: none; }
+.tabs a:hover { color: var(--ink); }
+.tabs a[aria-current="page"]:hover { color: var(--surface); }
+
+/* טאב יחיד: העמודה נפרשת על כל הרוחב, והרכבים נערכים כרשת קוביות. */
+.chain.solo { grid-template-columns: 1fr; }
+.chain-col.solo .chain-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+/* ---------- הלוח בסדנה ---------- */
+.lobby, .wall {
+  min-height: 100svh;
+  padding: 22px clamp(16px, 3vw, 40px) 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wall-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.wall-tabs span {
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: clamp(14px, 1.2vw, 18px);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.wall-tabs span.on { background: var(--ink); color: var(--surface); box-shadow: none; }
+
+.wall-panel { display: none; }
+.wall-panel.on { display: block; flex: 1; }
+.wall-panel h1 {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  margin: 18px 0 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.wall-panel h1 .num { color: var(--muted); font-size: .7em; }
+.wall-empty { color: var(--muted); font-size: clamp(1.1rem, 2vw, 1.6rem); margin-top: 20px; }
+
+.cubes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(200px, 18vw, 330px), 1fr));
+  gap: clamp(8px, 1vw, 14px);
+}
+.cube {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border-inline-start: 8px solid var(--forest);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: clamp(10px, 1vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cube.warn {
+  border-inline-start-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+}
+.cube.late {
+  border-inline-start-color: #b3261e;
+  background: color-mix(in srgb, #b3261e 12%, var(--surface));
+}
+.cube-plate {
+  background: var(--plate);
+  color: var(--plate-ink);
+  align-self: flex-start;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-weight: 800;
+  font-size: clamp(17px, 1.5vw, 26px);
+  letter-spacing: .03em;
+  box-shadow: inset 0 0 0 2px var(--plate-edge);
+}
+.cube b { font-size: clamp(15px, 1.2vw, 21px); line-height: 1.25; margin-top: 6px; }
+.cube-clock { font-size: clamp(14px, 1.1vw, 20px); color: var(--muted); }
+.cube-clock .clock { font-size: 1.05em; }
+.cube small { color: var(--muted); font-size: clamp(12px, .9vw, 15px); }
+
+.wall-foot {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- הלוח בחדר ההמתנה ---------- */
+.lobby-head h1 { font-size: clamp(1.7rem, 2.6vw, 2.6rem); }
+.lobby-head p { color: var(--muted); margin-top: 6px; font-size: clamp(15px, 1.2vw, 20px); }
+.lobby-empty { color: var(--muted); margin-top: 14px; font-size: clamp(15px, 1.2vw, 19px); }
+
+.lobby-grid {
+  flex: 1;
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 2.5vw, 40px);
+  align-content: start;
+}
+.lobby-grid h2 {
+  font-size: clamp(1.2rem, 1.8vw, 1.9rem);
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.lobby-cars {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 14vw, 240px), 1fr));
+  gap: 10px;
+}
+.lobby-car {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: clamp(10px, 1vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+/* הצבע היחיד במסך הזה. אדום או כתום מול הבעלים של הרכב, בלי הסבר ובלי מי
+   שיענה, גרוע מלא להציג כלום. */
+.lobby-car.ready {
+  background: color-mix(in srgb, var(--forest) 14%, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--forest);
+}
+.lobby-car .num {
+  font-weight: 800;
+  font-size: clamp(20px, 2vw, 34px);
+  letter-spacing: .04em;
+}
+.lobby-car b { color: var(--muted); font-weight: 600; font-size: clamp(13px, 1vw, 17px); }
+
+.lobby-foot {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: clamp(13px, 1vw, 16px);
+}
+
+@media (max-width: 720px) {
+  .lobby-grid { grid-template-columns: 1fr; }
+}
+.screens-note { margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--line); }
