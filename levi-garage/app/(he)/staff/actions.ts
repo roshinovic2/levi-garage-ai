@@ -120,3 +120,19 @@ export async function takeCar(formData: FormData) {
   revalidatePath("/staff/lift")
   revalidatePath("/staff")
 }
+
+/** המכונאי בוחר איפה הוא עובד עכשיו: ליפט 1 עד 4, או עמדת האבחון. */
+export async function setMyLift(formData: FormData) {
+  const staff = await requireStaff()
+  const raw = String(formData.get("lift") || "")
+  const lift = raw === "" ? null : Number(raw)
+  if (lift !== null && ![1, 2, 3, 4].includes(lift)) return
+
+  const supabase = await createClient()
+  // דרך פונקציה במסד, שנוגעת רק בעמודת העמדה. עדכון ישיר של הטבלה היה מאפשר
+  // למכונאי לשנות לעצמו גם את התפקיד.
+  await supabase.rpc("set_my_lift", { p_lift: lift })
+
+  revalidatePath("/staff/lift")
+  revalidatePath("/staff")
+}

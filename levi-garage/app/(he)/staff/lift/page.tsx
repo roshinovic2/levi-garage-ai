@@ -4,7 +4,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { VoiceButton } from "@/components/staff/voice-button"
-import { takeCar } from "../actions"
+import { setMyLift, takeCar } from "../actions"
 
 export const metadata: Metadata = { title: "הליפט שלי | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -70,9 +70,21 @@ export default async function LiftPage() {
       <header className="staff-top">
         <div>
           <Link className="staff-back" href="/staff">לוח היום</Link>
-          <h1>{staff.lift ? `ליפט ${staff.lift}` : "הרכבים בעבודה"}</h1>
+          <h1>{staff.lift ? `ליפט ${staff.lift}` : "עמדת אבחון"}</h1>
           <p>{staff.full_name}</p>
         </div>
+
+        {/* במוסך יש 4 ליפטים ויותר מכונאים מזה, והעמדה מתחלפת במהלך היום. */}
+        <form action={setMyLift} className="lift-picker">
+          <label htmlFor="my-lift">איפה אני עובד עכשיו</label>
+          <select id="my-lift" name="lift" defaultValue={staff.lift ?? ""}>
+            {[1, 2, 3, 4].map((n) => (
+              <option key={n} value={n}>ליפט {n}</option>
+            ))}
+            <option value="">עמדת אבחון</option>
+          </select>
+          <button className="btn quiet" type="submit">עדכון</button>
+        </form>
       </header>
 
       {mine.length > 0 ? (
@@ -83,7 +95,7 @@ export default async function LiftPage() {
         </ul>
       ) : (
         <p className="staff-empty">
-          {staff.lift ? `אין כרגע רכב על ליפט ${staff.lift}.` : "אין כרגע רכבים בעבודה."}
+          {staff.lift ? `אין כרגע רכב על ליפט ${staff.lift}.` : "לא בחרת ליפט, ולכן רואים כאן את כל הרכבים בעבודה."}
           {elsewhere > 0 && ` ${elsewhere === 1 ? "רכב אחד נמצא" : `${elsewhere} רכבים נמצאים`} על ליפטים אחרים.`}
           {unassigned.length === 0 && " כשדניאל פותח כרטיס ומשייך אותו לליפט הזה, הוא יופיע כאן."}
         </p>

@@ -21,7 +21,9 @@ const TEAM = [
   { email: "test1@test.com", full_name: "דניאל לוי", role: "manager", lift: null, lang: "he" },
   { email: "test2@test.com", full_name: "סאמר", role: "mechanic", lift: 2, lang: "ar" },
   { email: "test3@test.com", full_name: "אבי לוי", role: "owner", lift: null, lang: "he" },
-  { email: "test4@test.com", full_name: "אלכס", role: "mechanic", lift: 3, lang: "ru" },
+  { email: "test4@test.com", full_name: "אלכס", role: "mechanic", lift: null, lang: "ru" },  // חשמל ומיזוג, בעמדת האבחון
+  { email: "test5@test.com", full_name: "מוטי", role: "mechanic", lift: 1, lang: "he" },
+  { email: "test6@test.com", full_name: "נועם", role: "mechanic", lift: null, lang: "he" },   // שוליה, עובר בין ליפטים
 ]
 
 // המשתמשים הישנים, מלפני שעברנו לכתובות הקצרות. נמחקים בהרצה הראשונה.
