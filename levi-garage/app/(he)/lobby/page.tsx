@@ -1,8 +1,10 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireScreen } from "@/lib/staff/session"
 import { AutoRefresh } from "@/components/staff/auto-refresh"
+import { ThemeToggle } from "@/components/site/theme-toggle"
 
 export const metadata: Metadata = { title: "הרכבים שלנו היום | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -83,7 +85,16 @@ export default async function LobbyPage() {
         </div>
       )}
 
-      <footer className="lobby-foot">הרכב שלכם לא ברשימה, או שיש שאלה? הצוות בדלפק ישמח לעזור.</footer>
+      <footer className="lobby-foot">
+        הרכב שלכם לא ברשימה, או שיש שאלה? הצוות בדלפק ישמח לעזור.
+        {/* קטן ואפור בכוונה: זה לצוות שמתקין את המסך, לא ללקוחות שיושבים מולו. */}
+        <span className="lobby-tools">
+          <ThemeToggle compact />
+          <Link className="lobby-switch" href="/staff/login">
+            החלפת משתמש
+          </Link>
+        </span>
+      </footer>
     </main>
   )
 }

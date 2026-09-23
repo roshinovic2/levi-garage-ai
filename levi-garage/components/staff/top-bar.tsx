@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { signOut } from "@/app/(he)/staff/actions"
 import { roleLabel, type StaffMember } from "@/lib/staff/session"
+import { ThemeToggle } from "@/components/site/theme-toggle"
 
 // פס עליון אחד לכל מסכי הצוות, כדי שתמיד יהיה ברור מי מחובר ואיך חוזרים.
 // המכונאי לא צריך ציים ומדדים, ולכן הוא לא רואה אותם.
@@ -46,6 +47,7 @@ export function TopBar({
             {staff.role === "mechanic" ? (staff.lift ? ` · ליפט ${staff.lift}` : " · עמדת אבחון") : ""}
           </small>
         </span>
+        <ThemeToggle compact />
         <form action={signOut}>
           <button type="submit">יציאה</button>
         </form>

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Assistant, Frank_Ruhl_Libre } from "next/font/google"
 
 import "../site.css"
+import { themeScript } from "@/components/site/theme-toggle"
 import { dicts } from "@/lib/site/dict"
 
 const display = Frank_Ruhl_Libre({ subsets: ["hebrew", "latin"], weight: ["500", "700", "900"], variable: "--font-display", display: "swap" })
@@ -28,6 +29,10 @@ export const viewport: Viewport = {
 export default function HebrewLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="he" dir="rtl" className={`${display.variable} ${body.variable}`}>
+      <head>
+        {/* לפני הציור הראשון, כדי שלא יהיה הבהוב של הצבע הלא נכון. */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   )

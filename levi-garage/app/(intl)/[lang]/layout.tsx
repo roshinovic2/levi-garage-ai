@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { IBM_Plex_Sans_Arabic, Noto_Naskh_Arabic, Noto_Sans, Noto_Serif } from "next/font/google"
 
 import "../../site.css"
+import { themeScript } from "@/components/site/theme-toggle"
 import { dicts } from "@/lib/site/dict"
 
 // Arabic and Russian need faces that carry their scripts; the Hebrew pair has no Arabic or Cyrillic glyphs.
@@ -34,6 +35,10 @@ export default async function IntlLayout({ children, params }: { children: React
   const fonts = lang === "ar" ? `${arDisplay.variable} ${arBody.variable}` : `${ruDisplay.variable} ${ruBody.variable}`
   return (
     <html lang={lang} dir={dicts[lang].dir} className={fonts}>
+      <head>
+        {/* לפני הציור הראשון, כדי שלא יהיה הבהוב של הצבע הלא נכון. */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   )

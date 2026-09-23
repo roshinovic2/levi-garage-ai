@@ -31,7 +31,7 @@ export type Dict = {
     disclaimer: string; thinking: string; error: string; limit: string; open: string; close: string
     book: string; whatsapp: string; you: string; garage: string
   }
-  footer: { tagline: string; privacy: string; accessibility: string; terms: string; staff: string; demo: string; langs: string }
+  footer: { tagline: string; privacy: string; accessibility: string; terms: string; staff: string; demo: string; langs: string; themeLight: string; themeDark: string }
 }
 
 const he: Dict = {
@@ -187,6 +187,8 @@ const he: Dict = {
     staff: "כניסת צוות",
     demo: "אתר הדגמה לפרויקט גמר. העסק, האנשים והתמונות בדויים, והתמונות נוצרו להמחשה.",
     langs: "שפה",
+    themeLight: "תאורה בהירה",
+    themeDark: "תאורה כהה",
   },
 }
 
@@ -343,6 +345,8 @@ const ar: Dict = {
     staff: "دخول الطاقم",
     demo: "موقع عرض لمشروع تخرّج. المصلحة والأشخاص والصور متخيّلة، والصور أُنتجت للتوضيح.",
     langs: "اللغة",
+    themeLight: "إضاءة فاتحة",
+    themeDark: "إضاءة داكنة",
   },
 }
 
@@ -499,6 +503,8 @@ const ru: Dict = {
     staff: "Вход для сотрудников",
     demo: "Демонстрационный сайт для дипломного проекта. Бизнес, люди и фотографии вымышлены, фото созданы для иллюстрации.",
     langs: "Язык",
+    themeLight: "Светлая тема",
+    themeDark: "Тёмная тема",
   },
 }
 

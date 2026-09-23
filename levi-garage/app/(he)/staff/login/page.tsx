@@ -9,7 +9,13 @@ export const metadata: Metadata = { title: "כניסת צוות | מוסך לו�
 // טופס שרת רגיל, בלי מצב בצד הלקוח. הוא עובד גם לפני שה-JavaScript נטען,
 // וזה בדיוק המצב במוסך: טלפון בכיס, רשת חלשה, ואצבע אחת פנויה.
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ e?: string }> }) {
-  if (await getStaff()) redirect("/staff")
+  const current = await getStaff()
+
+  // משתמש של מסך תלוי נשאר כאן ורואה את הטופס, כדי שאפשר יהיה להחליף מסך.
+  // בלי זה הוא היה מופנה חזרה למסך שלו וחוזר חלילה: מחובר לנצח, בלי יציאה.
+  // נתפס כשניסיתי לפתוח את /lobby בדפדפן שכבר היה מחובר כמסך הסדנה.
+  if (current && current.role !== "display") redirect("/staff")
+
   const { e } = await searchParams
 
   return (
@@ -17,6 +23,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="staff-login-box">
         <h1>כניסת צוות</h1>
         <p>אזור העבודה של המוסך. לקוחות לא צריכים להיכנס לכאן.</p>
+
+        {current && (
+          <p className="staff-note">
+            המכשיר הזה מחובר כרגע כ<b>{current.full_name}</b>. התחברות כאן תחליף אותו.
+          </p>
+        )}
 
         <form action={signIn} className="staff-form">
           <label htmlFor="email">אימייל</label>

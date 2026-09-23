@@ -8,6 +8,7 @@ import { clockOf, heat, heatOf, stageLabel, TOO_LONG, type Stage } from "@/lib/s
 import { Since } from "@/components/staff/since"
 import { Rotator } from "@/components/staff/rotator"
 import { AutoRefresh } from "@/components/staff/auto-refresh"
+import { ThemeToggle } from "@/components/site/theme-toggle"
 
 export const metadata: Metadata = { title: "לוח הסדנה | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -174,7 +175,13 @@ export default async function WallPage() {
         <span>
           ירוק בתוך הזמן · כתום מעבר לסף · אדום מעבר לכפול ({TOO_LONG.lift / 60} שע׳ על תא, {TOO_LONG.customer / 60} שע׳ אצל הלקוח)
         </span>
-        <Link href="/staff/floor">מסך העבודה</Link>
+        <span className="wall-foot-links">
+          {/* המסך הזה תלוי מול חלון או מול מנורה, ולכן התאורה נקבעת עליו
+              ולא לפי מה שהטלוויזיה חושבת. הבחירה נשמרת במכשיר. */}
+          <ThemeToggle />
+          <Link href="/staff/floor">מסך העבודה</Link>
+          <Link href="/staff/login">החלפת משתמש</Link>
+        </span>
       </footer>
     </main>
   )
