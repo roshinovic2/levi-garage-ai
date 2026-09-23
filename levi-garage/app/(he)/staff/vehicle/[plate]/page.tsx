@@ -3,14 +3,12 @@ import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
+import { fmtDate } from "@/lib/staff/format"
 
 export const metadata: Metadata = { title: "היסטוריית רכב | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
 // "הכול בראש של אבי" הופך לדף אחד: כל ביקור של הרכב, מה נמצא, ומה הלקוח אישר.
 // זה גם מה שמאפשר למכונאי אחר לטפל ברכב כשאבי לא במוסך.
-
-const date = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" }) : ""
 
 const shekel = (n: number) => `${Number(n || 0).toLocaleString("he-IL")} ש"ח`
 
@@ -71,7 +69,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ plate:
             {(visits ?? []).map((v) => (
               <li key={v.job_card_id}>
                 <div className="history-head">
-                  <b>{date(v.opened_at)}</b>
+                  <b>{fmtDate(v.opened_at)}</b>
                   <span className={`staff-status status-${v.status}`}>{statusLabel[v.status] ?? v.status}</span>
                   <Link className="staff-back" href={`/staff/job/${v.job_card_id}`}>הכרטיס</Link>
                 </div>

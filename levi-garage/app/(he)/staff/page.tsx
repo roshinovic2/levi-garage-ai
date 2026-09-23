@@ -4,6 +4,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff, roleLabel } from "@/lib/staff/session"
 import { openJobCard, signOut } from "./actions"
+import { fmtTime } from "@/lib/staff/format"
 
 export const metadata: Metadata = { title: "לוח היום | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -14,11 +15,6 @@ const statusLabel: Record<string, string> = {
   ready: "מוכן",
   delivered: "נמסר",
   cancelled: "בוטל",
-}
-
-function time(iso: string | null) {
-  if (!iso) return ""
-  return new Date(iso).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
 }
 
 export default async function StaffBoard() {
@@ -85,7 +81,7 @@ export default async function StaffBoard() {
                   <span className="plate-chip num" dir="ltr">{c.plate}</span>
                   <b>{[c.vehicle_make, c.vehicle_model].filter(Boolean).join(" ") || "רכב"}{c.vehicle_year ? `, ${c.vehicle_year}` : ""}</b>
                   <span className="staff-meta">
-                    {c.lift ? `ליפט ${c.lift} · ` : ""}נפתח ב-{time(c.opened_at)}
+                    {c.lift ? `ליפט ${c.lift} · ` : ""}נפתח ב-{fmtTime(c.opened_at)}
                   </span>
                   <span className={`staff-status status-${c.status}`}>{statusLabel[c.status] ?? c.status}</span>
                 </Link>
@@ -107,7 +103,7 @@ export default async function StaffBoard() {
                   <span className="plate-chip num" dir="ltr">{b.plate}</span>
                   <b>{b.customer_name || "ללא שם"}</b>
                   <span className="staff-meta">
-                    {time(b.drop_off_at)} · {b.service || "ללא שירות"}
+                    {fmtTime(b.drop_off_at)} · {b.service || "ללא שירות"}
                     {b.vehicle_make ? ` · ${b.vehicle_make} ${b.vehicle_model ?? ""}` : ""}
                   </span>
                 </div>

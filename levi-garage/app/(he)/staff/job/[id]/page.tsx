@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { setJobStatus } from "../../actions"
 import { DraftForm } from "@/components/staff/draft-form"
+import { fmtStamp } from "@/lib/staff/format"
 
 export const metadata: Metadata = { title: "כרטיס עבודה | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -15,11 +16,6 @@ const findingStatus: Record<string, string> = {
   approved: "הלקוח אישר",
   declined: "הלקוח דחה",
   cancelled: "בוטלה",
-}
-
-function when(iso: string | null) {
-  if (!iso) return ""
-  return new Date(iso).toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
 }
 
 export default async function JobCardPage({ params }: { params: Promise<{ id: string }> }) {
@@ -95,7 +91,7 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
                 <li key={f.id} className={`job-finding status-${f.status}`}>
                   <div className="job-finding-head">
                     <b>{findingStatus[f.status] ?? f.status}</b>
-                    <span className="staff-meta">{when(f.created_at)}{f.model ? ` · ${f.model}` : ""}</span>
+                    <span className="staff-meta">{fmtStamp(f.created_at)}{f.model ? ` · ${f.model}` : ""}</span>
                     {f.red_list && <span className="job-red">רשימה אדומה: לעצור ולקרוא לאבי</span>}
                   </div>
 
@@ -130,7 +126,7 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
                             ? `הלקוח אישר ${approval.part_choice === "original" ? "חלק מקורי" : "חלק חלופי"}, ${Number(approval.price_chosen).toLocaleString("he-IL")} ש"ח`
                             : "הלקוח דחה את התיקון"}
                           {" · "}
-                          {when(approval.decided_at)}
+                          {fmtStamp(approval.decided_at)}
                         </p>
                       ) : (
                         approval?.token && (

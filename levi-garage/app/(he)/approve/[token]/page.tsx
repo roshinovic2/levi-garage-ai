@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import { createClient } from "@/lib/supabase/server"
 import { ApproveForm } from "@/components/staff/approve-form"
+import { fmtStamp } from "@/lib/staff/format"
 
 export const metadata: Metadata = {
   title: "אישור תיקון | מוסך לוי ובניו",
@@ -80,7 +81,7 @@ export default async function ApprovePage({ params }: { params: Promise<{ token:
                 <p>נמשיך רק במה שסוכם קודם, ונעדכן כשהרכב מוכן.</p>
               </>
             )}
-            <p className="approve-stamp">נרשם אצלנו בכתב, {new Date(view.decided_at!).toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</p>
+            <p className="approve-stamp">נרשם אצלנו בכתב, {fmtStamp(view.decided_at)}</p>
           </div>
         ) : view.expired ? null : (
           <ApproveForm

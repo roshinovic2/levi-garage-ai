@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { createClient } from "@/lib/supabase/server"
+import { fmtDate } from "@/lib/staff/format"
 
 export const metadata: Metadata = { title: "הצי שלכם | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -20,8 +21,7 @@ type Row = {
 }
 
 const shekel = (n: number) => `${Number(n || 0).toLocaleString("he-IL")} ש"ח`
-const date = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" }) : "עוד לא היה אצלנו"
+const date = (iso: string | null) => (iso ? fmtDate(iso) : "עוד לא היה אצלנו")
 
 const inGarage = (status: string | null) => status !== null && !["delivered", "cancelled"].includes(status)
 

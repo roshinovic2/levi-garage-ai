@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
+import { hourInIsrael } from "@/lib/staff/format"
 
 export const metadata: Metadata = { title: "מדדים | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -17,12 +18,6 @@ function minutesBetween(a: string, b: string) {
   return Math.max(0, (new Date(b).getTime() - new Date(a).getTime()) / 60000)
 }
 
-// השעה בשעון ישראל, ולא בשעון של השרת. ב-Vercel השרת רץ ב-UTC, ובלי זה
-// מסירה ב-16:35 הייתה נספרת כ-13:35 ועוברת את היעד בטעות.
-const HOUR_IL = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jerusalem", hour: "2-digit", hour12: false })
-function hourInIsrael(iso: string) {
-  return Number(HOUR_IL.format(new Date(iso)))
-}
 
 export default async function DashboardPage() {
   await requireStaff()
