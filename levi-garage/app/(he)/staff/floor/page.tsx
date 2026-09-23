@@ -83,7 +83,7 @@ export default async function FloorPage({ searchParams }: { searchParams: Promis
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
 
-  const [{ data: cards }, { data: crew }, { data: booked }, { count: deliveredToday }, { data: displays }] = await Promise.all([
+  const [{ data: cards }, { data: crew }, { data: booked }, { count: deliveredToday }] = await Promise.all([
     supabase
       .from("job_cards")
       .select(
@@ -105,9 +105,6 @@ export default async function FloorPage({ searchParams }: { searchParams: Promis
       .select("id", { count: "exact", head: true })
       .eq("status", "delivered")
       .gte("delivered_at", today.toISOString()),
-    // הכתובות של המסכים התלויים. הן לא נכתבות בקוד ולא נשלחות בהודעה:
-    // מי שצריך להדליק מסך, פותח אותן מכאן.
-    supabase.from("displays").select("kind, name, token").eq("active", true),
   ])
 
   const all = (cards ?? []) as Card[]
@@ -432,25 +429,14 @@ export default async function FloorPage({ searchParams }: { searchParams: Promis
         )}
       </div>
 
-      {staff.role !== "mechanic" && (displays ?? []).length > 0 && (
+      {staff.role !== "mechanic" && (
         <p className="chain-note screens-note">
-          המסכים התלויים:{" "}
-          <Link href="/staff/wall" target="_blank" rel="noreferrer">
-            לוח הסדנה
-          </Link>
-          {(displays ?? []).map((d) => (
-            <span key={d.token}>
-              {" · "}
-              <a href={`/lobby/${d.token}`} target="_blank" rel="noreferrer">
-                {d.name}
-              </a>
-            </span>
-          ))}
-          {" — פותחים פעם אחת על המסך עצמו ומשאירים. "}
-          <Link href="/staff/screens">ניהול המסכים</Link>
-          {"."}
+          המסכים התלויים: <a href="/wall" target="_blank" rel="noreferrer">/wall</a> בסדנה,{" "}
+          <a href="/lobby" target="_blank" rel="noreferrer">/lobby</a> בחדר ההמתנה. מקלידים את הכתובת על המסך
+          עצמו, נכנסים עם המשתמש של אותו מסך, ומשאירים. הם מתרעננים לבד.
         </p>
       )}
+
     </main>
   )
 }

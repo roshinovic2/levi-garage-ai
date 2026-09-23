@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server"
 // מי מחובר, ומה מותר לו. שורת ה-staff היא מקור האמת לתפקיד:
 // משתמש שנוצר ב-auth אבל אין לו שורה כאן, הוא לא איש צוות.
 
-export type StaffRole = "owner" | "manager" | "mechanic"
+export type StaffRole = "owner" | "manager" | "mechanic" | "display"
+export type ScreenKind = "lobby" | "wall"
 
 export type StaffMember = {
   id: string
@@ -14,6 +15,8 @@ export type StaffMember = {
   lift: number | null
   lang: "he" | "ar" | "ru"
   email: string
+  /** למשתמש מסך בלבד: איזה מסך מותר לו לפתוח. */
+  screen: ScreenKind | null
 }
 
 export async function getStaff(): Promise<StaffMember | null> {
@@ -24,7 +27,7 @@ export async function getStaff(): Promise<StaffMember | null> {
 
   const { data } = await supabase
     .from("staff")
-    .select("id, full_name, role, lift, lang, active")
+    .select("id, full_name, role, lift, lang, screen, active")
     .eq("id", auth.user.id)
     .maybeSingle()
 
@@ -37,6 +40,22 @@ export async function getStaff(): Promise<StaffMember | null> {
 export async function requireStaff(): Promise<StaffMember> {
   const staff = await getStaff()
   if (!staff) redirect("/staff/login")
+  // משתמש מסך לא מסתובב באזור הצוות. זו כל הנקודה שלו: המסך בחדר ההמתנה
+  // נשאר מחובר כל היום בחדר ציבורי, ומי שנוגע בו חוזר למסך ולא ללוח היום.
+  if (staff.role === "display") redirect(screenPath(staff))
+  return staff
+}
+
+export const screenPath = (staff: { screen: ScreenKind | null }) => (staff.screen === "wall" ? "/wall" : "/lobby")
+
+/**
+ * לשני המסכים התלויים. משתמש מסך נכנס רק למסך שלו, ואיש צוות אמיתי נכנס
+ * לשניהם — כדי שדניאל יוכל להציץ בלוח הסדנה מהטלפון בלי עוד חשבון.
+ */
+export async function requireScreen(kind: ScreenKind): Promise<StaffMember> {
+  const staff = await getStaff()
+  if (!staff) redirect("/staff/login")
+  if (staff.role === "display" && staff.screen !== kind) redirect(screenPath(staff))
   return staff
 }
 
@@ -51,4 +70,5 @@ export const roleLabel: Record<StaffRole, string> = {
   owner: "בעלים",
   manager: "מנהל עבודה",
   mechanic: "מכונאי",
+  display: "מסך",
 }

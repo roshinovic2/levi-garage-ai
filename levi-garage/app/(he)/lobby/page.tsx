@@ -1,47 +1,33 @@
 import type { Metadata } from "next"
 
 import { createClient } from "@/lib/supabase/server"
+import { requireScreen } from "@/lib/staff/session"
 import { AutoRefresh } from "@/components/staff/auto-refresh"
 
 export const metadata: Metadata = { title: "הרכבים שלנו היום | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
-// המסך בחדר ההמתנה. הוא תלוי מול אנשים שאינם לקוחות שלנו גם כן: מי שמלווה,
-// מי שנכנס לשאול משהו, ושליח שעובר. לכן כל מה שהוא מראה הוא שלוש ספרות
-// אחרונות ודגם, ושום דבר מעבר לזה.
+// המסך בחדר ההמתנה. כתובת קבועה, /lobby, ומתחברים אליה פעם אחת עם המשתמש
+// של המסך. אין טוקן: דניאל כבר יודע להתחבר, וקישור סודי גרר אחריו טבלה,
+// הנפקה, ביטול ומסך ניהול — הכול כדי להחליף דבר שהוא עושה ממילא.
 //
-// מה במפורש לא כאן, וזה לא קיצור דרך אלא החלטה:
-//   · שם, טלפון, מספר רישוי מלא.
-//   · מחירים וממצאים.
-//   · "ממתין לאישור הלקוח" — זה היה מכריז פומבית שאדם מסוים התבקש לשלם
-//     ועוד לא אישר, מול חדר מלא אנשים.
+// המשתמש הזה הוא לא דניאל, וזה העיקר: המסך נשאר מחובר כל היום בחדר ציבורי,
+// ולכן הזהות שעליו יודעת לפתוח את הדף הזה ותו לא. היא לא קוראת job_cards,
+// לא bookings ולא findings — is_staff במסד לא מכירה בה — וכל מה שמגיע אליה
+// עובר דרך lobby_view, שמחזירה שלוש ספרות אחרונות ודגם.
+//
+// מה במפורש לא כאן:
+//   · שם, טלפון, מספר רישוי מלא, מחירים.
+//   · "ממתין לאישור הלקוח" — זה היה מכריז מול חדר מלא אנשים שאדם מסוים
+//     התבקש לשלם ועוד לא אישר. במסד הוא ממופה ל"בעבודה" ממילא.
 //   · שעונים. העיכוב שלנו לא מוצג לאדם שנפגע ממנו, בלי הסבר ובלי מי שיענה.
-//
-// הסינון לא נעשה כאן אלא בפונקציה lobby_view במסד: הדף הזה לא מחובר, ולכן
-// אסור לו לגעת בטבלאות בכלל. גם מי שיקרא את קוד הדף לא ימצא דרך לשדה אחר.
 
 type Row = { plate_last3: string; vehicle: string | null; state: "working" | "ready" }
 
-export default async function LobbyPage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params
+export default async function LobbyPage() {
+  await requireScreen("lobby")
   const supabase = await createClient()
-  const [{ data: name }, { data }] = await Promise.all([
-    supabase.rpc("lobby_name", { p_token: token }),
-    supabase.rpc("lobby_view", { p_token: token }),
-  ])
+  const { data } = await supabase.rpc("lobby_view")
   const rows = (data ?? []) as Row[]
-
-  // מסך שלא מזוהה אומר את זה. אחרת טוקן שהוקלד לא נכון היה מציג "אין כרגע
-  // רכבים במוסך", ומי שתלה אותו היה מאמין לו.
-  if (!name) {
-    return (
-      <main className="lobby">
-        <header className="lobby-head">
-          <h1>מוסך לוי ובניו</h1>
-          <p>הקישור של המסך הזה לא בתוקף. הצוות בדלפק יכול להנפיק קישור חדש.</p>
-        </header>
-      </main>
-    )
-  }
 
   const ready = rows.filter((r) => r.state === "ready")
   const working = rows.filter((r) => r.state === "working")
@@ -97,9 +83,7 @@ export default async function LobbyPage({ params }: { params: Promise<{ token: s
         </div>
       )}
 
-      <footer className="lobby-foot">
-        הרכב שלכם לא ברשימה, או שיש שאלה? הצוות בדלפק ישמח לעזור.
-      </footer>
+      <footer className="lobby-foot">הרכב שלכם לא ברשימה, או שיש שאלה? הצוות בדלפק ישמח לעזור.</footer>
     </main>
   )
 }

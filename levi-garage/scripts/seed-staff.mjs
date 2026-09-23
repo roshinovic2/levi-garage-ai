@@ -24,6 +24,12 @@ const TEAM = [
   { email: "test4@test.com", full_name: "אלכס", role: "mechanic", lift: null, lang: "ru" },  // חשמל ומיזוג, בעמדת האבחון
   { email: "test5@test.com", full_name: "מוטי", role: "mechanic", lift: 1, lang: "he" },
   { email: "test6@test.com", full_name: "נועם", role: "mechanic", lift: null, lang: "he" },   // שוליה, עובר בין ליפטים
+
+  // שני המסכים התלויים. אלה לא אנשים: זו זהות שיודעת לפתוח מסך אחד ותו לא.
+  // המסך בחדר ההמתנה נשאר מחובר כל היום בחדר ציבורי, ולכן הוא לא מקבל את
+  // המשתמש של דניאל — מי שייגע בו היה מגיע לשמות, לטלפונים ולמחירים.
+  { email: "screen1@test.com", full_name: "מסך חדר ההמתנה", role: "display", lift: null, lang: "he", screen: "lobby" },
+  { email: "screen2@test.com", full_name: "מסך הסדנה", role: "display", lift: null, lang: "he", screen: "wall" },
 ]
 
 // המשתמשים הישנים, מלפני שעברנו לכתובות הקצרות. נמחקים בהרצה הראשונה.
@@ -75,6 +81,7 @@ async function upsertStaffRow(id, person) {
       full_name: person.full_name,
       role: person.role,
       lift: person.lift,
+      screen: person.screen ?? null,
       lang: person.lang,
       active: true,
     }),
@@ -93,7 +100,7 @@ for (const email of RETIRED) {
 for (const person of TEAM) {
   const id = await upsertUser(person)
   await upsertStaffRow(id, person)
-  console.log(`✓ ${person.full_name} (${person.role}${person.lift ? `, ליפט ${person.lift}` : ""}) - ${person.email}`)
+  console.log(`✓ ${person.full_name} (${person.role}${person.lift ? `, ליפט ${person.lift}` : ""}${person.screen ? `, ${person.screen}` : ""}) - ${person.email}`)
 }
 
 console.log(`

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
-import { requireStaff } from "@/lib/staff/session"
+import { requireScreen } from "@/lib/staff/session"
 import { elapsed, fmtMinutes, fmtTime, minutesSince } from "@/lib/staff/format"
 import { clockOf, heat, heatOf, stageLabel, TOO_LONG, type Stage } from "@/lib/staff/stages"
 import { Since } from "@/components/staff/since"
@@ -11,7 +11,7 @@ import { AutoRefresh } from "@/components/staff/auto-refresh"
 
 export const metadata: Metadata = { title: "לוח הסדנה | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
-// המסך שתלוי בסדנה. אותם נתונים של מפת המוסך, אבל שלב אחד בכל פעם על כל
+// המסך שתלוי בסדנה, בכתובת קבועה: /wall. אותם נתונים של מפת המוסך, אבל שלב אחד בכל פעם על כל
 // רוחב המסך: כך ארבע-עשרה קוביות נכנסות בלי לגלול, וכל אחת נקראת מהצד
 // השני של השטח. אין כאן אף כפתור — זה מסך שמסתכלים בו.
 //
@@ -55,7 +55,7 @@ function Empty({ text }: { text: string }) {
 }
 
 export default async function WallPage() {
-  await requireStaff()
+  await requireScreen("wall")
   const supabase = await createClient()
 
   const today = new Date()
@@ -174,7 +174,7 @@ export default async function WallPage() {
         <span>
           ירוק בתוך הזמן · כתום מעבר לסף · אדום מעבר לכפול ({TOO_LONG.lift / 60} שע׳ על תא, {TOO_LONG.customer / 60} שע׳ אצל הלקוח)
         </span>
-        <Link href="/staff/floor">חזרה למסך העבודה</Link>
+        <Link href="/staff/floor">מסך העבודה</Link>
       </footer>
     </main>
   )

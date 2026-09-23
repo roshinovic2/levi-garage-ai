@@ -12,7 +12,7 @@
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const secret = process.env.SUPABASE_SECRET_KEY
-const password = process.env.STAFF_DEMO_PASSWORD || "LeviGarage-2026-demo"
+const password = process.env.STAFF_DEMO_PASSWORD || "levi-2026"
 
 let pass = 0
 let fail = 0
@@ -89,7 +89,7 @@ const findRes = await service(`/rest/v1/findings`, {
 const [finding] = await findRes.json()
 
 // ---------- 1. מכונאי לא שולח מחירים ----------
-const mechanic = await signIn("samer@levi-garage.demo")
+const mechanic = await signIn("test2@test.com")
 let res = await call(`/rest/v1/rpc/send_finding`, {
   token: mechanic,
   method: "POST",
@@ -99,7 +99,7 @@ const mechanicBody = await res.text()
 ok("מכונאי לא יכול לשלוח מחיר ללקוח", res.status === 403 || /42501|only a manager/.test(mechanicBody), `status ${res.status}`)
 
 // ---------- 2. מנהל עבודה שולח ----------
-const manager = await signIn("daniel@levi-garage.demo")
+const manager = await signIn("test1@test.com")
 const message = "מצאנו נזילה ממשאבת המים. מקורי 800 ש\"ח, חלופי 500 ש\"ח, כולל מע\"מ. אם מאשרים עכשיו, הרכב מוכן היום ב-15:00."
 res = await call(`/rest/v1/rpc/send_finding`, {
   token: manager,
