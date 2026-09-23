@@ -35,26 +35,36 @@ const hits = new Map<string, number[]>()
 const WINDOW_MS = 10 * 60 * 1000
 const MAX_PER_WINDOW = 12
 
-function limited(ip: string) {
+function limited(key: string) {
   const now = Date.now()
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS)
+  const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS)
   recent.push(now)
-  hits.set(ip, recent)
+  hits.set(key, recent)
   return recent.length > MAX_PER_WINDOW
+}
+
+// בוט הוואטסאפ של המוסך מדבר עם אותו בסיס ידע, אבל כל הפניות שלו מגיעות מכתובת אחת.
+// עם טוקן משותף סופרים לפי השולח שהבוט מדווח עליו (מזהה אטום, לא מספר טלפון),
+// כדי ששולח אחד לא יחסום את כל השאר. בלי טוקן תקף, הפנייה נספרת לפי IP כמו כל אחד.
+function rateKey(req: Request, client: unknown) {
+  const token = process.env.GARAGE_BOT_TOKEN
+  const sent = req.headers.get("x-garage-bot-token")
+  const fromBot = Boolean(token && sent && sent === token)
+  if (fromBot) return `bot:${typeof client === "string" ? client.slice(0, 64) : "unknown"}`
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local"
 }
 
 type Turn = { role: "user" | "model"; text: string }
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local"
-  if (limited(ip)) return NextResponse.json({ error: "limit" }, { status: 429 })
-
-  let body: { question?: unknown; lang?: unknown; history?: unknown }
+  let body: { question?: unknown; lang?: unknown; history?: unknown; client?: unknown }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: "bad" }, { status: 400 })
   }
+
+  if (limited(rateKey(req, body.client))) return NextResponse.json({ error: "limit" }, { status: 429 })
 
   const question = typeof body.question === "string" ? body.question.trim().slice(0, 400) : ""
   const lang = body.lang === "ar" || body.lang === "ru" ? body.lang : "he"
