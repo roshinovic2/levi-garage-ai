@@ -213,3 +213,36 @@ select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5
 .approve-done p { margin-top: 6px; color: var(--muted); }
 .approve-done.approved { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--forest) 50%, transparent); }
 .approve-stamp { font-size: 13.5px; margin-top: 10px; }
+
+/* ---------- דף המכונאי ---------- */
+.lift-page { max-width: 640px; }
+.lift-list { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 18px; }
+.lift-car {
+  background: var(--surface); border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow); padding: 20px;
+}
+.lift-car-head { display: flex; gap: 14px; align-items: center; }
+.lift-car-head b { font-size: 18px; display: block; }
+.lift-link { display: inline-block; margin-top: 14px; font-size: 14.5px; color: var(--muted); }
+.lift-hint { margin-top: 28px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+.voice { margin-top: 18px; }
+.voice-btn {
+  width: 100%; min-height: 72px; border: 0; border-radius: 999px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: var(--amber); color: var(--amber-ink);
+  font: 800 20px/1 var(--font-body), sans-serif;
+  transition: background-color 160ms ease-out, transform 160ms var(--ease-out);
+}
+.voice-btn:active { transform: scale(0.985); }
+.voice-btn[disabled] { opacity: .7; cursor: default; }
+.voice-btn.recording { background: #c0392b; color: #fff; }
+.voice-dot { width: 14px; height: 14px; border-radius: 50%; background: currentColor; opacity: .85; }
+@media (prefers-reduced-motion: no-preference) {
+  .voice-btn.recording .voice-dot { animation: voice-pulse 1.1s ease-in-out infinite; }
+}
+@keyframes voice-pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+
+.voice-msg { margin-top: 12px; font-size: 15.5px; line-height: 1.6; }
+.voice-msg.error { color: #c0392b; font-weight: 600; }
+.voice-msg.done { color: var(--muted); }

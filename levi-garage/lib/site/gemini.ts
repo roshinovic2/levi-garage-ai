@@ -42,12 +42,21 @@ async function accessToken() {
   return cached
 }
 
+// חלק בתוכן: טקסט, או קובץ (אודיו מהמכונאי, ובהמשך גם תמונה).
+export type Part = { text: string } | { audio: { data: string; mime: string } }
+
+function toApiPart(p: Part) {
+  return "text" in p ? { text: p.text } : { inlineData: { mimeType: p.audio.mime, data: p.audio.data } }
+}
+
 export async function generateJson<T>(opts: {
   model?: string
   system: string
-  contents: { role: "user" | "model"; text: string }[]
+  contents: { role: "user" | "model"; text?: string; parts?: Part[] }[]
   schema: object
   temperature?: number
+  timeoutMs?: number
+  maxOutputTokens?: number
 }): Promise<T> {
   const { token, project } = await accessToken()
   const model = opts.model ?? "gemini-2.5-flash"
@@ -58,21 +67,32 @@ export async function generateJson<T>(opts: {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: opts.system }] },
-        contents: opts.contents.map((c) => ({ role: c.role, parts: [{ text: c.text }] })),
+        contents: opts.contents.map((c) => ({
+          role: c.role,
+          parts: c.parts ? c.parts.map(toApiPart) : [{ text: c.text ?? "" }],
+        })),
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: opts.schema,
           temperature: opts.temperature ?? 0.2,
-          maxOutputTokens: 800,
-          thinkingConfig: { thinkingBudget: 0 },
+          maxOutputTokens: opts.maxOutputTokens ?? 800,
+          // אפשר לכבות "חשיבה" רק ב-flash. ב-pro זה מוחזר כשגיאה 400,
+          // ולכן ב-pro פשוט לא שולחים את השדה.
+          ...(model.includes("flash") ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
         },
       }),
-      signal: AbortSignal.timeout(20_000),
+      // הודעה קולית ב-pro לוקחת כ-17 שניות לפי ה-POC, ולכן זמן ההמתנה ארוך יותר.
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 20_000),
     },
   )
   const json = await res.json()
-  if (json.error) throw new Error(`Gemini ${json.error.code}`)
-  const text = json.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("")
+  if (json.error) throw new Error(`Gemini ${json.error.code}: ${json.error.message ?? ""}`.trim())
+  const candidate = json.candidates?.[0]
+  const text = candidate?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("")
+  // ב-pro גם ה"חשיבה" נגרעת מתקציב הפלט, ולכן תקציב קטן מדי מחזיר JSON חתוך באמצע.
+  if (candidate?.finishReason && candidate.finishReason !== "STOP") {
+    throw new Error(`Gemini stopped: ${candidate.finishReason}`)
+  }
   if (!text) throw new Error("Gemini empty response")
   return JSON.parse(text) as T
 }

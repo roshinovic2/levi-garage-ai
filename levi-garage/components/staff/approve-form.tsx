@@ -43,8 +43,9 @@ export function ApproveForm({
     router.refresh()
   }
 
+  const both = priceOriginal !== null && priceAftermarket !== null
   const options = [
-    { key: "original" as const, label: "חלק מקורי", price: priceOriginal },
+    { key: "original" as const, label: both ? "חלק מקורי" : "מחיר", price: priceOriginal },
     { key: "aftermarket" as const, label: "חלק חלופי", price: priceAftermarket },
   ].filter((o) => o.price !== null && o.price !== undefined)
 

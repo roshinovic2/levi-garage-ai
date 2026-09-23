@@ -42,13 +42,15 @@ export function DraftForm({
 
       <div className="job-prices">
         <div>
-          <span>חלק מקורי</span>
+          <span>{priceAftermarket === null ? "מחיר" : "חלק מקורי"}</span>
           <b className="num">{money(priceOriginal)}</b>
         </div>
-        <div>
-          <span>חלק חלופי</span>
-          <b className="num">{money(priceAftermarket)}</b>
-        </div>
+        {priceAftermarket !== null && (
+          <div>
+            <span>חלק חלופי</span>
+            <b className="num">{money(priceAftermarket)}</b>
+          </div>
+        )}
         <div>
           <span>מוכן</span>
           <b>{eta || "לא נאמר"}</b>
