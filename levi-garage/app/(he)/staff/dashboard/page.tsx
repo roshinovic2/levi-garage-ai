@@ -4,6 +4,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { hourInIsrael } from "@/lib/staff/format"
+import { TopBar } from "@/components/staff/top-bar"
 
 export const metadata: Metadata = { title: "מדדים | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -20,7 +21,7 @@ function minutesBetween(a: string, b: string) {
 
 
 export default async function DashboardPage() {
-  await requireStaff()
+  const staff = await requireStaff()
   const supabase = await createClient()
 
   const since = new Date()
@@ -103,9 +104,10 @@ export default async function DashboardPage() {
 
   return (
     <main className="staff-wrap">
-      <header className="staff-top">
+      <TopBar staff={staff} current="dashboard" />
+
+      <header className="board-head">
         <div>
-          <Link className="staff-back" href="/staff">לוח היום</Link>
           <h1>מדדים</h1>
           <p>ששת המדדים שאבי קבע, ומה שהמערכת יודעת לומר על כל אחד. 30 ימים אחרונים.</p>
         </div>

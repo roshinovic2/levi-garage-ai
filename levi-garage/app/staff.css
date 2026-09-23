@@ -302,3 +302,54 @@ select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5
 .lift-picker { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .lift-picker label { font-size: 14px; color: var(--muted); width: 100%; }
 .lift-picker .btn { min-height: 44px; padding-inline: 16px; font-size: 15px; }
+
+/* ---------- פס עליון אחיד ---------- */
+.topbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px 20px;
+  flex-wrap: wrap; padding-block: 14px; border-bottom: 1px solid var(--line);
+}
+.topbar-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.topbar-links a {
+  text-decoration: none; font-weight: 600; font-size: 15px; padding: 10px 14px;
+  border-radius: 999px; color: var(--muted); min-height: 44px; display: inline-flex; align-items: center;
+}
+.topbar-links a[aria-current="page"] { background: var(--sunk); color: var(--ink); }
+.topbar-links a:hover { color: var(--ink); }
+.topbar-me { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
+.topbar-me span { display: flex; flex-direction: column; line-height: 1.25; font-weight: 600; }
+.topbar-me small { color: var(--muted); font-weight: 500; font-size: 13px; }
+.topbar-me button {
+  background: none; border: 0; color: var(--muted); font: inherit; cursor: pointer;
+  text-decoration: underline; padding: 12px 4px; min-height: 44px;
+}
+.topbar-me button:hover { color: var(--ink); }
+
+/* ---------- לוח היום ---------- */
+.board-head { margin-top: 24px; }
+.board-head h1 { font-size: clamp(1.9rem, 4vw, 2.4rem); }
+.board-head p { color: var(--muted); margin-top: 6px; }
+
+.board-counts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.board-counts span {
+  background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 14.5px;
+  color: var(--muted); box-shadow: inset 0 0 0 1px var(--line);
+}
+.board-counts b { color: var(--ink); font-size: 16px; margin-inline-end: 4px; }
+.board-counts .hot { background: color-mix(in srgb, var(--amber) 20%, var(--surface)); color: var(--ink); box-shadow: none; }
+
+.board-group { margin-top: 30px; }
+.board-group h2 { font-size: 20px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+.board-group.hot h2 { border-bottom-color: var(--amber); }
+.board-why { color: var(--muted); font-size: 14.5px; margin-top: 10px; }
+
+.board-rows { list-style: none; margin: 8px 0 0; padding: 0; }
+.board-rows li {
+  display: flex; align-items: center; gap: 12px; padding: 14px 0; flex-wrap: wrap;
+}
+.board-rows li + li { border-top: 1px solid var(--line); }
+.board-rows li > div { flex: 1 1 120px; min-width: 0; }
+.board-rows b { display: block; font-size: 16.5px; }
+.board-rows .staff-meta { display: block; margin-top: 2px; }
+.board-rows .btn { min-height: 44px; padding-inline: 18px; font-size: 15px; }
+.board-arrive { display: flex; gap: 8px; align-items: center; }
+.board-group.hot .board-rows li { background: color-mix(in srgb, var(--amber) 8%, transparent); }

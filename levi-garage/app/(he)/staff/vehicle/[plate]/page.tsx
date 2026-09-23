@@ -4,6 +4,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { fmtDate } from "@/lib/staff/format"
+import { TopBar } from "@/components/staff/top-bar"
 
 export const metadata: Metadata = { title: "היסטוריית רכב | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -22,7 +23,7 @@ const statusLabel: Record<string, string> = {
 }
 
 export default async function VehiclePage({ params }: { params: Promise<{ plate: string }> }) {
-  await requireStaff()
+  const staff = await requireStaff()
   const { plate } = await params
   const digits = plate.replace(/\D/g, "")
   const supabase = await createClient()
@@ -44,6 +45,8 @@ export default async function VehiclePage({ params }: { params: Promise<{ plate:
 
   return (
     <main className="staff-wrap">
+      <TopBar staff={staff} current="other" />
+
       <header className="staff-top">
         <div>
           <Link className="staff-back" href="/staff">לוח היום</Link>

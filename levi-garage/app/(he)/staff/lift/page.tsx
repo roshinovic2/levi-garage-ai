@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { VoiceButton } from "@/components/staff/voice-button"
 import { setMyLift, takeCar } from "../actions"
+import { TopBar } from "@/components/staff/top-bar"
 
 export const metadata: Metadata = { title: "הליפט שלי | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -67,11 +68,12 @@ export default async function LiftPage() {
 
   return (
     <main className="staff-wrap lift-page">
+      <TopBar staff={staff} current="lift" />
+
       <header className="staff-top">
         <div>
-          <Link className="staff-back" href="/staff">לוח היום</Link>
           <h1>{staff.lift ? `ליפט ${staff.lift}` : "עמדת אבחון"}</h1>
-          <p>{staff.full_name}</p>
+          <p>הרכבים שאתה אחראי עליהם עכשיו. לוחצים, מדברים, ודניאל מקבל טיוטה.</p>
         </div>
 
         {/* במוסך יש 4 ליפטים ויותר מכונאים מזה, והעמדה מתחלפת במהלך היום. */}

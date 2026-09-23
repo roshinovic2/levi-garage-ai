@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
+import { TopBar } from "@/components/staff/top-bar"
 
 export const metadata: Metadata = { title: "ציים | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: "ציים | מוסך לוי ובני�
 const shekel = (n: number) => `${Number(n || 0).toLocaleString("he-IL")} ש"ח`
 
 export default async function FleetsPage() {
-  await requireStaff()
+  const staff = await requireStaff()
   const supabase = await createClient()
 
   const { data: fleets } = await supabase
@@ -45,9 +46,10 @@ export default async function FleetsPage() {
 
   return (
     <main className="staff-wrap">
-      <header className="staff-top">
+      <TopBar staff={staff} current="fleets" />
+
+      <header className="board-head">
         <div>
-          <Link className="staff-back" href="/staff">לוח היום</Link>
           <h1>ציים</h1>
           <p>החברות שעובדות איתנו בחשבון חודשי</p>
         </div>

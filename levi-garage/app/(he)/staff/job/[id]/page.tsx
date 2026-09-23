@@ -7,6 +7,7 @@ import { requireStaff } from "@/lib/staff/session"
 import { setJobStatus } from "../../actions"
 import { DraftForm } from "@/components/staff/draft-form"
 import { fmtStamp } from "@/lib/staff/format"
+import { TopBar } from "@/components/staff/top-bar"
 
 export const metadata: Metadata = { title: "כרטיס עבודה | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -43,6 +44,8 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
 
   return (
     <main className="staff-wrap">
+      <TopBar staff={staff} current="other" />
+
       <header className="staff-top">
         <div>
           <Link className="staff-back" href="/staff">חזרה ללוח</Link>

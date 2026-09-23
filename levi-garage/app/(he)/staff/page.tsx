@@ -2,19 +2,24 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
-import { requireStaff, roleLabel } from "@/lib/staff/session"
-import { openJobCard, signOut } from "./actions"
+import { requireStaff } from "@/lib/staff/session"
 import { fmtTime } from "@/lib/staff/format"
+import { TopBar } from "@/components/staff/top-bar"
+import { openJobCard, setJobStatus } from "./actions"
 
 export const metadata: Metadata = { title: "לוח היום | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
-const statusLabel: Record<string, string> = {
-  open: "נפתח",
-  in_progress: "בעבודה",
-  waiting_approval: "ממתין לאישור הלקוח",
-  ready: "מוכן",
-  delivered: "נמסר",
-  cancelled: "בוטל",
+// לוח היום של דניאל, מסודר לפי מה שדוחף עכשיו ולא לפי סדר הכניסה:
+// קודם מי שתקוע ומחכה ללקוח, אחר כך מי שמוכן למסירה, אחר כך מי שבעבודה,
+// ובסוף מי שעוד לא הגיע. בכל שורה כתוב מה הצעד הבא.
+
+function Plate({ value }: { value: string }) {
+  return <span className="plate-chip num" dir="ltr">{value}</span>
+}
+
+function carName(c: { vehicle_make: string | null; vehicle_model: string | null; vehicle_year?: number | null }) {
+  const name = [c.vehicle_make, c.vehicle_model].filter(Boolean).join(" ")
+  return (name || "רכב") + (c.vehicle_year ? `, ${c.vehicle_year}` : "")
 }
 
 export default async function StaffBoard() {
@@ -40,87 +45,136 @@ export default async function StaffBoard() {
       .order("drop_off_at", { ascending: true }),
   ])
 
-  const waiting = (cards ?? []).filter((c) => c.status === "waiting_approval")
+  const all = cards ?? []
+  const waiting = all.filter((c) => c.status === "waiting_approval")
+  const ready = all.filter((c) => c.status === "ready")
+  const working = all.filter((c) => c.status === "open" || c.status === "in_progress")
+  const arriving = booked ?? []
 
   return (
     <main className="staff-wrap">
-      <header className="staff-top">
-        <div>
-          <h1>לוח היום</h1>
-          <p>
-            {staff.full_name} · {roleLabel[staff.role]}
-            {staff.lift ? ` · ליפט ${staff.lift}` : ""}
-          </p>
-        </div>
-        <div className="staff-nav">
-          {staff.role === "mechanic" && <Link className="btn quiet" href="/staff/lift">הליפט שלי</Link>}
-          <Link className="btn quiet" href="/staff/fleets">ציים</Link>
-          <Link className="btn quiet" href="/staff/dashboard">מדדים</Link>
-          <form action={signOut}>
-            <button className="btn quiet" type="submit">יציאה</button>
-          </form>
-        </div>
+      <TopBar staff={staff} current="board" />
+
+      <header className="board-head">
+        <h1>לוח היום</h1>
+        <p>כל רכב שנמצא אצלנו עכשיו, ומה הצעד הבא בכל אחד.</p>
       </header>
 
+      <div className="board-counts" aria-label="סיכום">
+        <span className={waiting.length ? "hot" : ""}>
+          <b className="num">{waiting.length}</b> מחכים ללקוח
+        </span>
+        <span>
+          <b className="num">{working.length}</b> בעבודה
+        </span>
+        <span>
+          <b className="num">{ready.length}</b> מוכנים
+        </span>
+        <span>
+          <b className="num">{arriving.length}</b> עוד לא הגיעו
+        </span>
+      </div>
+
       {waiting.length > 0 && (
-        <section className="staff-alert" aria-label="ממתינים לאישור">
-          <b>{waiting.length} רכבים ממתינים לתשובת הלקוח.</b>
-          <span>כל עוד אין תשובה, הליפט תפוס.</span>
+        <section className="board-group hot" aria-labelledby="g-waiting">
+          <h2 id="g-waiting">מחכים לתשובת הלקוח</h2>
+          <p className="board-why">הליפט תפוס עד שהלקוח עונה. אם עבר זמן, זה המקום להרים טלפון.</p>
+          <ul className="board-rows">
+            {waiting.map((c) => (
+              <li key={c.id}>
+                <Plate value={c.plate} />
+                <div>
+                  <b>{carName(c)}</b>
+                  <span className="staff-meta">
+                    {c.customer_name || "ללא שם"}
+                    {c.lift ? ` · ליפט ${c.lift}` : ""} · נכנס ב-{fmtTime(c.opened_at)}
+                  </span>
+                </div>
+                <Link className="btn quiet" href={`/staff/job/${c.id}`}>מה נשלח</Link>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
-      <section className="staff-section" aria-labelledby="open-cards">
-        <h2 id="open-cards">על הליפטים עכשיו</h2>
-        {(cards ?? []).length === 0 ? (
-          <p className="staff-empty">אין כרטיסים פתוחים. כשרכב מגיע, פותחים לו כרטיס מהרשימה למטה.</p>
+      {ready.length > 0 && (
+        <section className="board-group" aria-labelledby="g-ready">
+          <h2 id="g-ready">מוכנים למסירה</h2>
+          <p className="board-why">הרכב גמור. אחרי שהלקוח לוקח אותו, לוחצים "נמסר".</p>
+          <ul className="board-rows">
+            {ready.map((c) => (
+              <li key={c.id}>
+                <Plate value={c.plate} />
+                <div>
+                  <b>{carName(c)}</b>
+                  <span className="staff-meta">{c.customer_name || "ללא שם"}</span>
+                </div>
+                <form action={setJobStatus}>
+                  <input type="hidden" name="job_id" value={c.id} />
+                  <input type="hidden" name="status" value="delivered" />
+                  <button className="btn" type="submit">נמסר</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="board-group" aria-labelledby="g-working">
+        <h2 id="g-working">בעבודה</h2>
+        {working.length === 0 ? (
+          <p className="staff-empty">אין כרגע רכב בעבודה.</p>
         ) : (
-          <ul className="staff-cards">
-            {(cards ?? []).map((c) => (
-              <li key={c.id} className={`staff-card status-${c.status}`}>
-                <Link href={`/staff/job/${c.id}`}>
-                  <span className="plate-chip num" dir="ltr">{c.plate}</span>
-                  <b>{[c.vehicle_make, c.vehicle_model].filter(Boolean).join(" ") || "רכב"}{c.vehicle_year ? `, ${c.vehicle_year}` : ""}</b>
+          <ul className="board-rows">
+            {working.map((c) => (
+              <li key={c.id}>
+                <Plate value={c.plate} />
+                <div>
+                  <b>{carName(c)}</b>
                   <span className="staff-meta">
-                    {c.lift ? `ליפט ${c.lift} · ` : ""}נפתח ב-{fmtTime(c.opened_at)}
+                    {c.lift ? `ליפט ${c.lift}` : "בלי ליפט"} · נכנס ב-{fmtTime(c.opened_at)}
                   </span>
-                  <span className={`staff-status status-${c.status}`}>{statusLabel[c.status] ?? c.status}</span>
-                </Link>
+                </div>
+                <Link className="btn quiet" href={`/staff/job/${c.id}`}>הכרטיס</Link>
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section className="staff-section" aria-labelledby="today-bookings">
-        <h2 id="today-bookings">תורים להיום</h2>
-        {(booked ?? []).length === 0 ? (
-          <p className="staff-empty">אין תורים להיום שעדיין לא נפתח להם כרטיס.</p>
+      <section className="board-group" aria-labelledby="g-arriving">
+        <h2 id="g-arriving">תורים להיום</h2>
+        {arriving.length === 0 ? (
+          <p className="staff-empty">כל מי שהיה אמור להגיע היום, הגיע.</p>
         ) : (
-          <ul className="staff-bookings">
-            {(booked ?? []).map((b) => (
-              <li key={b.id}>
-                <div>
-                  <span className="plate-chip num" dir="ltr">{b.plate}</span>
-                  <b>{b.customer_name || "ללא שם"}</b>
-                  <span className="staff-meta">
-                    {fmtTime(b.drop_off_at)} · {b.service || "ללא שירות"}
-                    {b.vehicle_make ? ` · ${b.vehicle_make} ${b.vehicle_model ?? ""}` : ""}
-                  </span>
-                </div>
-                <form action={openJobCard}>
-                  <input type="hidden" name="booking_id" value={b.id} />
-                  <label className="sr-only" htmlFor={`lift-${b.id}`}>ליפט</label>
-                  <select id={`lift-${b.id}`} name="lift" defaultValue={staff.lift ?? ""}>
-                    <option value="">בלי ליפט</option>
-                    {[1, 2, 3, 4].map((n) => (
-                      <option key={n} value={n}>ליפט {n}</option>
-                    ))}
-                  </select>
-                  <button className="btn" type="submit">הרכב הגיע</button>
-                </form>
-              </li>
-            ))}
-          </ul>
+          <>
+            <p className="board-why">כשהרכב מגיע בפועל, בוחרים ליפט ולוחצים. הכרטיס נפתח מעצמו, בלי להקליד כלום.</p>
+            <ul className="board-rows arriving">
+              {arriving.map((b) => (
+                <li key={b.id}>
+                  <Plate value={b.plate} />
+                  <div>
+                    <b>{b.customer_name || "ללא שם"}</b>
+                    <span className="staff-meta">
+                      {fmtTime(b.drop_off_at)} · {b.service || "ללא שירות"}
+                      {b.vehicle_make ? ` · ${carName(b)}` : ""}
+                    </span>
+                  </div>
+                  <form action={openJobCard} className="board-arrive">
+                    <label className="sr-only" htmlFor={`lift-${b.id}`}>ליפט</label>
+                    <select id={`lift-${b.id}`} name="lift" defaultValue={staff.lift ?? ""}>
+                      <option value="">בלי ליפט</option>
+                      {[1, 2, 3, 4].map((n) => (
+                        <option key={n} value={n}>ליפט {n}</option>
+                      ))}
+                    </select>
+                    <input type="hidden" name="booking_id" value={b.id} />
+                    <button className="btn" type="submit">הגיע</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </main>
