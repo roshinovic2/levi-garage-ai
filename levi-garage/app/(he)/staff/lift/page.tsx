@@ -4,11 +4,51 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { VoiceButton } from "@/components/staff/voice-button"
+import { takeCar } from "../actions"
 
 export const metadata: Metadata = { title: "הליפט שלי | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
 // דף המכונאי. מסך אחד, כפתור אחד, ואפס הקלדה: הוא רואה את הרכב שעל הליפט שלו,
 // לוחץ ומדבר. הרכב נקבע לפי שיוך הליפט בטבלת הצוות, ולא לפי מה שנאמר בהקלטה.
+//
+// רכב שנפתח בלי ליפט מופיע כאן בנפרד. בלי זה הוא היה נעלם מכל המכונאים,
+// ואף אחד לא היה יודע שהוא מחכה.
+
+function Car({
+  card,
+  canTake,
+}: {
+  card: { id: number; plate: string; vehicle_make: string | null; vehicle_model: string | null; vehicle_year: number | null; engine_code: string | null; status: string }
+  canTake?: boolean
+}) {
+  return (
+    <li className="lift-car">
+      <div className="lift-car-head">
+        <span className="plate-chip num" dir="ltr">{card.plate}</span>
+        <div>
+          <b>
+            {[card.vehicle_make, card.vehicle_model].filter(Boolean).join(" ") || "רכב"}
+            {card.vehicle_year ? `, ${card.vehicle_year}` : ""}
+          </b>
+          {card.engine_code && <span className="staff-meta"> מנוע {card.engine_code}</span>}
+        </div>
+      </div>
+
+      {card.status === "waiting_approval" && <p className="job-note">ממתינים לתשובת הלקוח על מה שכבר נשלח.</p>}
+
+      {canTake ? (
+        <form action={takeCar} className="lift-take">
+          <input type="hidden" name="job_id" value={card.id} />
+          <button className="btn" type="submit">קח לליפט שלי</button>
+        </form>
+      ) : (
+        <VoiceButton jobId={card.id} />
+      )}
+
+      <Link className="lift-link" href={`/staff/job/${card.id}`}>הכרטיס המלא</Link>
+    </li>
+  )
+}
 
 export default async function LiftPage() {
   const staff = await requireStaff()
@@ -20,7 +60,10 @@ export default async function LiftPage() {
     .in("status", ["open", "in_progress", "waiting_approval"])
     .order("opened_at", { ascending: true })
 
-  const mine = (cards ?? []).filter((c) => (staff.lift ? c.lift === staff.lift : true))
+  const all = cards ?? []
+  const mine = staff.lift ? all.filter((c) => c.lift === staff.lift) : all
+  const unassigned = staff.lift ? all.filter((c) => c.lift === null) : []
+  const elsewhere = staff.lift ? all.filter((c) => c.lift !== null && c.lift !== staff.lift).length : 0
 
   return (
     <main className="staff-wrap lift-page">
@@ -32,37 +75,30 @@ export default async function LiftPage() {
         </div>
       </header>
 
-      {mine.length === 0 ? (
-        <p className="staff-empty">
-          {staff.lift
-            ? `אין כרגע רכב על ליפט ${staff.lift}. כשפותחים כרטיס ומשייכים אותו לליפט הזה, הוא יופיע כאן.`
-            : "אין כרגע רכבים בעבודה."}
-        </p>
-      ) : (
+      {mine.length > 0 ? (
         <ul className="lift-list">
           {mine.map((c) => (
-            <li key={c.id} className="lift-car">
-              <div className="lift-car-head">
-                <span className="plate-chip num" dir="ltr">{c.plate}</span>
-                <div>
-                  <b>
-                    {[c.vehicle_make, c.vehicle_model].filter(Boolean).join(" ") || "רכב"}
-                    {c.vehicle_year ? `, ${c.vehicle_year}` : ""}
-                  </b>
-                  {c.engine_code && <span className="staff-meta"> מנוע {c.engine_code}</span>}
-                </div>
-              </div>
-
-              {c.status === "waiting_approval" ? (
-                <p className="job-note">ממתינים לתשובת הלקוח על מה שכבר נשלח.</p>
-              ) : null}
-
-              <VoiceButton jobId={c.id} />
-
-              <Link className="lift-link" href={`/staff/job/${c.id}`}>הכרטיס המלא</Link>
-            </li>
+            <Car key={c.id} card={c} />
           ))}
         </ul>
+      ) : (
+        <p className="staff-empty">
+          {staff.lift ? `אין כרגע רכב על ליפט ${staff.lift}.` : "אין כרגע רכבים בעבודה."}
+          {elsewhere > 0 && ` ${elsewhere === 1 ? "רכב אחד נמצא" : `${elsewhere} רכבים נמצאים`} על ליפטים אחרים.`}
+          {unassigned.length === 0 && " כשדניאל פותח כרטיס ומשייך אותו לליפט הזה, הוא יופיע כאן."}
+        </p>
+      )}
+
+      {unassigned.length > 0 && (
+        <section className="staff-section" aria-labelledby="unassigned-title">
+          <h2 id="unassigned-title">רכבים בלי ליפט</h2>
+          <p className="staff-meta">נפתח להם כרטיס, אבל לא נבחר ליפט. מי שלוקח אותם, לוקח גם את הדיווח.</p>
+          <ul className="lift-list">
+            {unassigned.map((c) => (
+              <Car key={c.id} card={c} canTake />
+            ))}
+          </ul>
+        </section>
       )}
 
       <p className="lift-hint">

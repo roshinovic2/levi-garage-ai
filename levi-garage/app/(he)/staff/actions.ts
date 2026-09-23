@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
-import { requireStaff, requireManager } from "@/lib/staff/session"
+import { getStaff, requireStaff, requireManager } from "@/lib/staff/session"
 
 // כל הפעולות של אזור הצוות עוברות כאן. הן רצות בשרת בזהות של המשתמש המחובר,
 // ולכן ה-RLS והפונקציות במסד אוכפים אותן שוב, גם אם מישהו יקרא להן ישירות.
@@ -23,7 +23,9 @@ export async function signIn(_prev: unknown, formData: FormData) {
     return { error: "האימייל או הסיסמה לא נכונים." }
   }
 
-  redirect("/staff")
+  // מכונאי נוחת ישר על הליפט שלו: זה כל המסך שהוא צריך. דניאל נוחת על הלוח.
+  const staff = await getStaff()
+  redirect(staff?.role === "mechanic" ? "/staff/lift" : "/staff")
 }
 
 export async function signOut() {
@@ -101,5 +103,18 @@ export async function sendFinding(formData: FormData) {
   await supabase.rpc("send_finding", { p_finding_id: findingId, p_message: message, p_channel: "link" })
 
   revalidatePath(`/staff/job/${jobId}`)
+  revalidatePath("/staff")
+}
+
+/** מכונאי לוקח לליפט שלו רכב שנפתח בלי שיוך. */
+export async function takeCar(formData: FormData) {
+  const staff = await requireStaff()
+  const id = Number(formData.get("job_id"))
+  if (!id || !staff.lift) return
+
+  const supabase = await createClient()
+  await supabase.from("job_cards").update({ lift: staff.lift }).eq("id", id).is("lift", null)
+
+  revalidatePath("/staff/lift")
   revalidatePath("/staff")
 }
