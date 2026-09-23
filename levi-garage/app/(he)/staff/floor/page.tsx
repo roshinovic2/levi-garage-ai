@@ -6,28 +6,25 @@ import { requireStaff } from "@/lib/staff/session"
 import { elapsed, fmtMinutes, fmtTime, minutesSince } from "@/lib/staff/format"
 import { TopBar } from "@/components/staff/top-bar"
 import { Since } from "@/components/staff/since"
+import { AutoRefresh } from "@/components/staff/auto-refresh"
+import { assignLift, openJobCard, setJobStatus } from "../actions"
 
 export const metadata: Metadata = { title: "מפת המוסך | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
-// התמונה שחסרה: לא רשימת משימות, אלא איפה כל רכב נמצא פיזית וכמה זמן הוא שם.
-// לוח היום עונה על "מה לעשות עכשיו". המסך הזה עונה על "למה אין לי מקום",
-// ועל השאלה שנשאלת בטלפון עשר פעמים ביום: איפה הרכב של כהן.
+// שרשרת היום, משמאל לימין של העין: מוזמן, בטיפול, מחכה ללקוח, הסתיים.
 //
-// אין כאן אף כפתור שמשנה משהו. זה מסך שמסתכלים בו, ולכן אפשר להשאיר אותו
-// פתוח על הדלפק בלי לחשוש שמישהו ילחץ על משהו בטעות.
+// הרעיון שמחזיק את המסך: **רכב יושב בשלב אחד בלבד**, ובכל שלב רץ עליו שעון
+// אחד שסופר מאז שנכנס אליו. אין "איפה זה רשום" ואין שני מקומות שסותרים זה
+// את זה, ולכן אפשר להסתכל על המסך רגע אחד ולדעת מה תקוע.
+//
+// כל מעבר הוא כפתור אחד, ובכוונה לא יותר: במוסך לוחצים עם אצבע מלוכלכת,
+// בלי לקרוא. הכפתורים הם טפסי שרת, ולכן הם עובדים גם לפני ש-JavaScript נטען.
 
 const LIFTS = [1, 2, 3, 4] as const
 
-// מתי זמן הופך ל"יותר מדי". המספרים האלה הם החלטה ולא מדידה, ולכן הם כאן
-// במקום אחד: אחרי שבוע עבודה אמיתי משנים אותם בשורה אחת.
-const TOO_LONG = { lift: 240, noLift: 30, customer: 120, ready: 120 }
-
-const statusLabel: Record<string, string> = {
-  open: "נפתח כרטיס",
-  in_progress: "בעבודה",
-  waiting_approval: "מחכה לתשובת הלקוח",
-  ready: "מוכן למסירה",
-}
+// מתי שלב הופך לתקוע. החלטה, לא מדידה, ולכן במקום אחד: אחרי שבוע אמיתי
+// יושבים עם דניאל ומכוונים. כתום שתמיד דולק הוא כתום שאף אחד לא קורא.
+const TOO_LONG = { lift: 240, noLift: 30, quote: 30, customer: 120, ready: 120 }
 
 type Card = {
   id: number
@@ -43,9 +40,31 @@ type Card = {
   customer_name: string | null
 }
 
-function carName(c: Card) {
+function carName(c: { vehicle_make: string | null; vehicle_model: string | null; vehicle_year?: number | null }) {
   const name = [c.vehicle_make, c.vehicle_model].filter(Boolean).join(" ")
   return (name || "רכב") + (c.vehicle_year ? `, ${c.vehicle_year}` : "")
+}
+
+function Plate({ value }: { value: string }) {
+  return (
+    <span className="plate-chip num" dir="ltr">
+      {value}
+    </span>
+  )
+}
+
+/** בורר ליפט שמציע רק תאים פנויים, כדי שאי אפשר יהיה לשים שני רכבים על אחד. */
+function LiftPicker({ free, name, defaultLift }: { free: number[]; name: string; defaultLift?: number | null }) {
+  return (
+    <select name={name} defaultValue={defaultLift ?? free[0] ?? ""} aria-label="ליפט">
+      <option value="">בלי ליפט</option>
+      {free.map((n) => (
+        <option key={n} value={n}>
+          ליפט {n}
+        </option>
+      ))}
+    </select>
+  )
 }
 
 export default async function FloorPage() {
@@ -56,7 +75,7 @@ export default async function FloorPage() {
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
 
-  const [{ data: cards }, { data: crew }, { data: booked }] = await Promise.all([
+  const [{ data: cards }, { data: crew }, { data: booked }, { count: deliveredToday }] = await Promise.all([
     supabase
       .from("job_cards")
       .select(
@@ -64,208 +83,321 @@ export default async function FloorPage() {
       )
       .not("status", "in", "(delivered,cancelled)")
       .order("opened_at", { ascending: true }),
-    // מכונאי רואה רק את עצמו בטבלת הצוות, ולכן השמות מופיעים לדניאל ולא לו.
-    // זה בכוונה: מי עובד איפה זה מידע של ניהול.
+    // מכונאי רואה רק את שורת הצוות של עצמו, ולכן השמות מופיעים לדניאל ולא לו.
     supabase.from("staff").select("id, full_name, lift").eq("active", true),
     supabase
       .from("bookings")
-      .select("id, plate, customer_name, service, drop_off_at")
+      .select("id, plate, customer_name, service, drop_off_at, vehicle_make, vehicle_model, vehicle_year")
       .gte("drop_off_at", today.toISOString())
       .lt("drop_off_at", tomorrow.toISOString())
       .in("status", ["booked", "rescheduled"])
       .order("drop_off_at", { ascending: true }),
+    supabase
+      .from("job_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "delivered")
+      .gte("delivered_at", today.toISOString()),
   ])
 
   const all = (cards ?? []) as Card[]
-  const onLifts = all.filter((c) => c.lift !== null).length
-  // תאים ולא רכבים: שני רכבים שמשויכים בטעות לאותו ליפט לא מפנים תא שלישי.
-  const freeLifts = LIFTS.length - new Set(all.filter((c) => c.lift !== null).map((c) => c.lift)).size
-  const waitingForLift = all.filter((c) => c.lift === null && c.status !== "ready")
-  const ready = all.filter((c) => c.status === "ready")
   const arriving = booked ?? []
 
-  const mechanicsAt = (lift: number) => (crew ?? []).filter((s) => s.lift === lift).map((s) => s.full_name)
+  const onLift = all.filter((c) => c.lift !== null && (c.status === "open" || c.status === "in_progress"))
+  const noLift = all.filter((c) => c.lift === null && (c.status === "open" || c.status === "in_progress"))
+  const waitingQuote = all.filter((c) => c.status === "waiting_quote")
+  const waitingCustomer = all.filter((c) => c.status === "waiting_approval")
+  const done = all.filter((c) => c.status === "ready")
+
+  const busyBays = new Set(all.filter((c) => c.lift !== null).map((c) => c.lift as number))
+  const free = LIFTS.filter((n) => !busyBays.has(n))
+  const carAt = (n: number) => all.find((c) => c.lift === n)
+  const mechanicAt = (n: number) => (crew ?? []).find((s) => s.lift === n)?.full_name
+
+  const working = onLift.length + noLift.length
+  const waiting = waitingQuote.length + waitingCustomer.length
 
   return (
-    <main className="staff-wrap">
+    <main className="staff-wrap wide">
       <TopBar staff={staff} current="floor" />
+      <AutoRefresh seconds={60} />
 
       <header className="board-head">
         <h1>מפת המוסך</h1>
-        <p>איפה כל רכב נמצא עכשיו, וכמה זמן הוא שם. השעונים מתקדמים לבד.</p>
+        <p>
+          כל רכב נמצא בשלב אחד בלבד, והשעון שלו סופר מאז שנכנס אליו. כל מעבר הוא לחיצה אחת. המסך מתרענן לבד.
+        </p>
       </header>
 
-      <div className="board-counts" aria-label="סיכום">
-        <span>
-          <b className="num">{all.length}</b> {all.length === 1 ? "רכב אצלנו" : "רכבים אצלנו"}
-        </span>
-        <span>
-          <b className="num">{onLifts}</b> על ליפט
-        </span>
-        <span className={waitingForLift.length ? "hot" : ""}>
-          <b className="num">{waitingForLift.length}</b> {waitingForLift.length === 1 ? "ממתין לליפט" : "ממתינים לליפט"}
-        </span>
-        <span>
-          <b className="num">{freeLifts}</b> {freeLifts === 1 ? "ליפט פנוי" : "ליפטים פנויים"}
-        </span>
-      </div>
+      {/* פס התאים. הוא היחיד שיודע להראות גם תא ריק, וזה מה שמניע את כל השרשרת. */}
+      <ul className="strip" aria-label="הליפטים">
+        {LIFTS.map((n) => {
+          const car = carAt(n)
+          const who = staff.role === "mechanic" ? (staff.lift === n ? "אני" : null) : mechanicAt(n)
+          return (
+            <li key={n} className={car ? "strip-bay busy" : "strip-bay"}>
+              <b>ליפט {n}</b>
+              {car ? (
+                <>
+                  <span className="num" dir="ltr">
+                    {car.plate}
+                  </span>
+                  <small>{who ?? ""}</small>
+                </>
+              ) : (
+                <span className="strip-free">פנוי</span>
+              )}
+            </li>
+          )
+        })}
+      </ul>
 
-      <section className="staff-section" aria-labelledby="bays-title">
-        <h2 id="bays-title">ארבעת הליפטים</h2>
-        <p className="board-why">מה שמסומן בכתום עומד יותר מדי זמן, ולכן שווה לבדוק אותו לפני השאר.</p>
+      <div className="chain">
+        {/* ---------- 1. מוזמנים להיום ---------- */}
+        <section className="chain-col" aria-labelledby="c1">
+          <div className="chain-head">
+            <h2 id="c1">מוזמנים להיום</h2>
+            <span className="chain-count num">{arriving.length}</span>
+          </div>
+          <p className="chain-why">הרכב מגיע לקבלה, דניאל מנתב אותו לתא, ולוחץ. הכרטיס נפתח מעצמו.</p>
 
-        <ul className="floor-grid">
-          {LIFTS.map((n) => {
-            const here = all.filter((c) => c.lift === n)
-            const crewHere = mechanicsAt(n)
-            // לכל מצב יש שעון אחר שמעניין. רכב שמחכה ללקוח נמדד מרגע השליחה,
-            // רכב גמור מרגע שסומן כמוכן, ורכב בעבודה לפי הזמן על הליפט עצמו.
-            // בלי ההפרדה הזאת כמעט כל תא היה נצבע בכתום, וכתום שתמיד דולק
-            // הוא כתום שאף אחד לא מסתכל עליו.
-            const stuck = here.some((c) =>
-              c.status === "waiting_approval"
-                ? minutesSince(c.status_since) > TOO_LONG.customer
-                : c.status === "ready"
-                  ? minutesSince(c.status_since) > TOO_LONG.ready
-                  : c.lift_since
-                    ? minutesSince(c.lift_since) > TOO_LONG.lift
-                    : false,
-            )
-
-            return (
-              <li key={n} className={`floor-bay${here.length ? " busy" : ""}${stuck ? " hot" : ""}`}>
-                <h3>
-                  <span>ליפט {n}</span>
-                  {/* מכונאי לא רואה את שורות הצוות של האחרים, ולכן עבורו הרשימה
-                      תמיד תיראה ריקה. עדיף לא לכתוב שורה מאשר לכתוב "בלי מכונאי"
-                      על ליפט שיש עליו מישהו. */}
-                  {staff.role !== "mechanic" ? (
-                    <small>{crewHere.length ? crewHere.join(", ") : "בלי מכונאי קבוע"}</small>
-                  ) : staff.lift === n ? (
-                    <small>אני כאן</small>
-                  ) : null}
-                </h3>
-
-                {here.length === 0 ? (
-                  <p className="floor-free">פנוי</p>
-                ) : (
-                  here.map((c) => (
-                    <div key={c.id} className="floor-car">
-                      <Link href={`/staff/job/${c.id}`}>
-                        <span className="plate-chip num" dir="ltr">{c.plate}</span>
-                        <b>{carName(c)}</b>
-                      </Link>
-                      <span className="staff-meta">{statusLabel[c.status] ?? c.status}</span>
-                      <p className="floor-clocks">
-                        <span>
-                          על הליפט{" "}
-                          <Since iso={c.lift_since ?? c.opened_at} initial={elapsed(c.lift_since ?? c.opened_at)} />
-                        </span>
-                        <span>
-                          אצלנו <Since iso={c.opened_at} initial={elapsed(c.opened_at)} />
-                        </span>
-                      </p>
+          {arriving.length === 0 ? (
+            <p className="chain-empty">כולם הגיעו.</p>
+          ) : (
+            <ul className="chain-cards">
+              {arriving.map((b) => {
+                const diff = minutesSince(b.drop_off_at)
+                return (
+                  <li key={b.id} className="chain-card">
+                    <div className="chain-card-top">
+                      <Plate value={b.plate} />
+                      <span className={diff > 10 ? "chain-when hot" : "chain-when"}>
+                        {diff > 0 ? `מאחר ${fmtMinutes(diff)}` : `בעוד ${fmtMinutes(-diff)}`}
+                      </span>
                     </div>
-                  ))
-                )}
+                    <b>{b.customer_name || "ללא שם"}</b>
+                    <span className="staff-meta">
+                      {fmtTime(b.drop_off_at)} · {b.service || "ללא שירות"}
+                      {b.vehicle_make ? ` · ${carName(b)}` : ""}
+                    </span>
+                    <form action={openJobCard} className="chain-do">
+                      <input type="hidden" name="booking_id" value={b.id} />
+                      <LiftPicker free={[...free]} name="lift" />
+                      <button className="btn" type="submit">
+                        התקבל
+                      </button>
+                    </form>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
 
-                {here.length > 1 && (
-                  <p className="floor-warn">שני רכבים משויכים לאותו ליפט. אחד מהם כנראה כבר לא שם.</p>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      </section>
+        {/* ---------- 2. בטיפול ---------- */}
+        <section className="chain-col" aria-labelledby="c2">
+          <div className="chain-head">
+            <h2 id="c2">בטיפול</h2>
+            <span className="chain-count num">{working}</span>
+          </div>
+          <p className="chain-why">מכאן והלאה הזמן נספר. מי שעל תא נמדד מרגע שעלה, ומי שממתין נמדד מרגע שהגיע.</p>
 
-      <section className="staff-section" aria-labelledby="waiting-title">
-        <h2 id="waiting-title">ממתינים לליפט</h2>
-        {waitingForLift.length === 0 ? (
-          <p className="staff-empty">אין רכב שמחכה בחוץ. לכל מי שנפתח לו כרטיס יש ליפט.</p>
-        ) : (
-          <ul className="board-rows">
-            {waitingForLift.map((c) => (
-              <li key={c.id}>
-                <span className="plate-chip num" dir="ltr">{c.plate}</span>
-                <div>
+          {working === 0 ? (
+            <p className="chain-empty">אין רכב בעבודה.</p>
+          ) : (
+            <ul className="chain-cards">
+              {onLift.map((c) => (
+                <li key={c.id} className="chain-card">
+                  <div className="chain-card-top">
+                    <Plate value={c.plate} />
+                    <span className="chain-tag">ליפט {c.lift}</span>
+                  </div>
+                  <b>{carName(c)}</b>
+                  <span className="staff-meta">{c.customer_name || "ללא שם"}</span>
+                  <p className="chain-clock">
+                    בעבודה{" "}
+                    <Since
+                      iso={c.lift_since ?? c.status_since}
+                      initial={elapsed(c.lift_since ?? c.status_since)}
+                      className={minutesSince(c.lift_since ?? c.status_since) > TOO_LONG.lift ? "hot" : ""}
+                    />
+                  </p>
+                  <div className="chain-do two">
+                    <form action={setJobStatus}>
+                      <input type="hidden" name="job_id" value={c.id} />
+                      <input type="hidden" name="status" value="waiting_quote" />
+                      <button className="btn" type="submit">
+                        סיימתי, צריך אישור
+                      </button>
+                    </form>
+                    <form action={setJobStatus}>
+                      <input type="hidden" name="job_id" value={c.id} />
+                      <input type="hidden" name="status" value="ready" />
+                      <button className="btn quiet" type="submit">
+                        סיום טיפול
+                      </button>
+                    </form>
+                  </div>
+                  <Link className="chain-link" href={`/staff/job/${c.id}`}>
+                    הכרטיס
+                  </Link>
+                </li>
+              ))}
+
+              {noLift.map((c) => (
+                <li key={c.id} className="chain-card pale">
+                  <div className="chain-card-top">
+                    <Plate value={c.plate} />
+                    <span className="chain-tag wait">ממתין לתא</span>
+                  </div>
+                  <b>{carName(c)}</b>
+                  <span className="staff-meta">{c.customer_name || "ללא שם"}</span>
+                  <p className="chain-clock">
+                    ממתין{" "}
+                    <Since
+                      iso={c.status_since}
+                      initial={elapsed(c.status_since)}
+                      className={minutesSince(c.status_since) > TOO_LONG.noLift ? "hot" : ""}
+                    />
+                  </p>
+                  {free.length > 0 ? (
+                    <form action={assignLift} className="chain-do">
+                      <input type="hidden" name="job_id" value={c.id} />
+                      <LiftPicker free={[...free]} name="lift" />
+                      <button className="btn" type="submit">
+                        העלה
+                      </button>
+                    </form>
+                  ) : (
+                    <p className="chain-note">אין תא פנוי. הוא יעלה כשמישהו יסיים.</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ---------- 3. מחכים לתשובה ---------- */}
+        <section className="chain-col" aria-labelledby="c3">
+          <div className="chain-head">
+            <h2 id="c3">מחכים לתשובה</h2>
+            <span className="chain-count num">{waiting}</span>
+          </div>
+          <p className="chain-why">
+            התא תפוס, ואנחנו לא עובדים. ברגע שהלקוח עונה, הרכב חוזר לבד ל"בטיפול".
+          </p>
+
+          {waiting === 0 ? (
+            <p className="chain-empty">אף אחד לא מחכה.</p>
+          ) : (
+            <ul className="chain-cards">
+              {waitingQuote.map((c) => (
+                <li key={c.id} className="chain-card">
+                  <div className="chain-card-top">
+                    <Plate value={c.plate} />
+                    <span className="chain-tag us">אצלנו</span>
+                  </div>
                   <b>{carName(c)}</b>
                   <span className="staff-meta">
-                    {c.customer_name || "ללא שם"} · נכנס ב-{fmtTime(c.opened_at)}
+                    {c.customer_name || "ללא שם"}
+                    {c.lift ? ` · ליפט ${c.lift}` : ""}
                   </span>
-                </div>
-                <span className="floor-wait">
-                  מחכה{" "}
-                  <Since
-                    iso={c.opened_at}
-                    initial={elapsed(c.opened_at)}
-                    className={minutesSince(c.opened_at) > TOO_LONG.noLift ? "hot" : ""}
-                  />
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="staff-section" aria-labelledby="ready-title">
-        <h2 id="ready-title">גמורים, ועדיין אצלנו</h2>
-        {ready.length === 0 ? (
-          <p className="staff-empty">אין רכב שסיים וממתין ללקוח.</p>
-        ) : (
-          <>
-            <p className="board-why">רכב גמור שנשאר במוסך תופס מקום. הזמן כאן נספר מהרגע שסומן כמוכן.</p>
-            <ul className="board-rows">
-              {ready.map((c) => (
-                <li key={c.id}>
-                  <span className="plate-chip num" dir="ltr">{c.plate}</span>
-                  <div>
-                    <b>{carName(c)}</b>
-                    <span className="staff-meta">
-                      {c.customer_name || "ללא שם"}
-                      {c.lift ? ` · עדיין על ליפט ${c.lift}` : " · לא על ליפט"}
-                    </span>
+                  <p className="chain-clock">
+                    מחכה לשליחה{" "}
+                    <Since
+                      iso={c.status_since}
+                      initial={elapsed(c.status_since)}
+                      className={minutesSince(c.status_since) > TOO_LONG.quote ? "hot" : ""}
+                    />
+                  </p>
+                  <div className="chain-do two">
+                    <Link className="btn" href={`/staff/job/${c.id}`}>
+                      שלח ללקוח
+                    </Link>
+                    <form action={setJobStatus}>
+                      <input type="hidden" name="job_id" value={c.id} />
+                      <input type="hidden" name="status" value="in_progress" />
+                      <button className="btn quiet" type="submit">
+                        חזרה לעבודה
+                      </button>
+                    </form>
                   </div>
-                  <span className="floor-wait">
-                    מוכן כבר{" "}
+                </li>
+              ))}
+
+              {waitingCustomer.map((c) => (
+                <li key={c.id} className="chain-card">
+                  <div className="chain-card-top">
+                    <Plate value={c.plate} />
+                    <span className="chain-tag them">אצל הלקוח</span>
+                  </div>
+                  <b>{carName(c)}</b>
+                  <span className="staff-meta">
+                    {c.customer_name || "ללא שם"}
+                    {c.lift ? ` · ליפט ${c.lift}` : ""}
+                  </span>
+                  <p className="chain-clock">
+                    נשלח לפני{" "}
+                    <Since
+                      iso={c.status_since}
+                      initial={elapsed(c.status_since)}
+                      className={minutesSince(c.status_since) > TOO_LONG.customer ? "hot" : ""}
+                    />
+                  </p>
+                  <Link className="btn quiet" href={`/staff/job/${c.id}`}>
+                    מה נשלח
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ---------- 4. הסתיים ---------- */}
+        <section className="chain-col" aria-labelledby="c4">
+          <div className="chain-head">
+            <h2 id="c4">הסתיים</h2>
+            <span className="chain-count num">{done.length}</span>
+          </div>
+          <p className="chain-why">התא כבר התפנה. הרכב מחכה בחצר שהלקוח יגיע לקחת אותו.</p>
+
+          {done.length === 0 ? (
+            <p className="chain-empty">עוד לא סיימנו רכב היום.</p>
+          ) : (
+            <ul className="chain-cards">
+              {done.map((c) => (
+                <li key={c.id} className="chain-card">
+                  <div className="chain-card-top">
+                    <Plate value={c.plate} />
+                  </div>
+                  <b>{carName(c)}</b>
+                  <span className="staff-meta">{c.customer_name || "ללא שם"}</span>
+                  <p className="chain-clock">
+                    מוכן{" "}
                     <Since
                       iso={c.status_since}
                       initial={elapsed(c.status_since)}
                       className={minutesSince(c.status_since) > TOO_LONG.ready ? "hot" : ""}
                     />
-                  </span>
+                  </p>
+                  <form action={setJobStatus} className="chain-do">
+                    <input type="hidden" name="job_id" value={c.id} />
+                    <input type="hidden" name="status" value="delivered" />
+                    <button className="btn" type="submit">
+                      נמסר ללקוח
+                    </button>
+                  </form>
                 </li>
               ))}
             </ul>
-          </>
-        )}
-      </section>
+          )}
 
-      <section className="staff-section" aria-labelledby="soon-title">
-        <h2 id="soon-title">אמורים להגיע היום</h2>
-        {arriving.length === 0 ? (
-          <p className="staff-empty">אין עוד תורים להיום.</p>
-        ) : (
-          <ul className="board-rows">
-            {arriving.map((b) => {
-              const diff = minutesSince(b.drop_off_at)
-              return (
-                <li key={b.id}>
-                  <span className="plate-chip num" dir="ltr">{b.plate}</span>
-                  <div>
-                    <b>{b.customer_name || "ללא שם"}</b>
-                    <span className="staff-meta">
-                      {fmtTime(b.drop_off_at)} · {b.service || "ללא שירות"}
-                    </span>
-                  </div>
-                  <span className={diff > 10 ? "floor-wait hot" : "floor-wait"}>
-                    {diff > 0 ? `מאחר ב-${fmtMinutes(diff)}` : `בעוד ${fmtMinutes(-diff)}`}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+          {/* הבטחה שלא מומשה היא גרועה יותר מהבטחה שלא ניתנה, ולכן זה כתוב על המסך. */}
+          <p className="chain-note">
+            הודעת "הרכב מוכן" ללקוח <b>עוד לא יוצאת אוטומטית</b>. הערוץ מחכה לבוט הוואטסאפ.
+          </p>
+          {(deliveredToday ?? 0) > 0 && <p className="chain-note">נמסרו היום: {deliveredToday}</p>}
+        </section>
+      </div>
     </main>
   )
 }

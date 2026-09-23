@@ -16,6 +16,7 @@ const shekel = (n: number) => `${Number(n || 0).toLocaleString("he-IL")} ש"ח`
 const statusLabel: Record<string, string> = {
   open: "נפתח",
   in_progress: "בעבודה",
+  waiting_quote: "מחכה לשליחה ללקוח",
   waiting_approval: "ממתין לאישור",
   ready: "מוכן",
   delivered: "נמסר",

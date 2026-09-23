@@ -70,24 +70,49 @@ export async function openJobCard(formData: FormData) {
   await supabase.from("bookings").update({ status: "arrived" }).eq("id", booking.id)
 
   revalidatePath("/staff")
+  revalidatePath("/staff/floor")
 }
 
-/** מעדכן מצב של כרטיס: בעבודה, מוכן, נמסר. */
+/** מעדכן מצב של כרטיס: בעבודה, ממתין לתשובה, מוכן, נמסר. */
 export async function setJobStatus(formData: FormData) {
   await requireStaff()
   const id = Number(formData.get("job_id"))
   const status = String(formData.get("status") || "")
-  if (!id || !["in_progress", "ready", "delivered", "cancelled"].includes(status)) return
+  if (!id || !["in_progress", "waiting_quote", "ready", "delivered", "cancelled"].includes(status)) return
 
   const supabase = await createClient()
   const patch: Record<string, unknown> = { status }
-  if (status === "ready") patch.ready_at = new Date().toISOString()
+  if (status === "ready") {
+    patch.ready_at = new Date().toISOString()
+    // סיום טיפול מפנה את התא. הרכב יוצא לחצר וממתין ללקוח, והליפט חוזר
+    // לתור: זה מה שמאפשר לרכב הבא לעלות. בלי זה התא נשאר "תפוס" על הנייר
+    // עד שמישהו נזכר לשחרר אותו ידנית, וזה אף פעם לא קורה.
+    patch.lift = null
+  }
   if (status === "delivered") patch.delivered_at = new Date().toISOString()
 
   await supabase.from("job_cards").update(patch).eq("id", id)
 
   revalidatePath("/staff")
+  revalidatePath("/staff/floor")
+  revalidatePath("/staff/lift")
   revalidatePath(`/staff/job/${id}`)
+}
+
+/** מעלה רכב שממתין לליפט פנוי, או מוריד אותו ממנו. */
+export async function assignLift(formData: FormData) {
+  await requireStaff()
+  const id = Number(formData.get("job_id"))
+  const raw = String(formData.get("lift") || "")
+  const lift = raw === "" ? null : Number(raw)
+  if (!id || (lift !== null && ![1, 2, 3, 4].includes(lift))) return
+
+  const supabase = await createClient()
+  await supabase.from("job_cards").update({ lift }).eq("id", id)
+
+  revalidatePath("/staff")
+  revalidatePath("/staff/floor")
+  revalidatePath("/staff/lift")
 }
 
 /** שולח ממצא ללקוח. המסד בודק שוב שהשולח הוא מנהל עבודה או בעלים. */
@@ -106,6 +131,7 @@ export async function sendFinding(formData: FormData) {
 
   revalidatePath(`/staff/job/${jobId}`)
   revalidatePath("/staff")
+  revalidatePath("/staff/floor")
 }
 
 /** מכונאי לוקח לליפט שלו רכב שנפתח בלי שיוך. */
@@ -119,6 +145,7 @@ export async function takeCar(formData: FormData) {
 
   revalidatePath("/staff/lift")
   revalidatePath("/staff")
+  revalidatePath("/staff/floor")
 }
 
 /** המכונאי בוחר איפה הוא עובד עכשיו: ליפט 1 עד 4, או עמדת האבחון. */
@@ -135,4 +162,5 @@ export async function setMyLift(formData: FormData) {
 
   revalidatePath("/staff/lift")
   revalidatePath("/staff")
+  revalidatePath("/staff/floor")
 }

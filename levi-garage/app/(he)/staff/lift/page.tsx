@@ -4,7 +4,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { VoiceButton } from "@/components/staff/voice-button"
-import { setMyLift, takeCar } from "../actions"
+import { setJobStatus, setMyLift, takeCar } from "../actions"
 import { TopBar } from "@/components/staff/top-bar"
 
 export const metadata: Metadata = { title: "הליפט שלי | מוסך לוי ובניו", robots: { index: false, follow: false } }
@@ -36,6 +36,7 @@ function Car({
       </div>
 
       {card.status === "waiting_approval" && <p className="job-note">ממתינים לתשובת הלקוח על מה שכבר נשלח.</p>}
+      {card.status === "waiting_quote" && <p className="job-note">סימנת שסיימת. דניאל צריך לשלוח את המחיר ללקוח.</p>}
 
       {canTake ? (
         <form action={takeCar} className="lift-take">
@@ -43,7 +44,19 @@ function Car({
           <button className="btn" type="submit">קח לליפט שלי</button>
         </form>
       ) : (
-        <VoiceButton jobId={card.id} />
+        <>
+          <VoiceButton jobId={card.id} />
+          {/* "סיימתי" הוא של המכונאי, ולכן הוא יושב כאן ולא רק אצל דניאל.
+              בלי הכפתור הזה הרכב נראה "בעבודה" עד שדניאל נזכר לשלוח,
+              והזמן שהוא תקוע אצלנו לא נספר לאף אחד. */}
+          {(card.status === "open" || card.status === "in_progress") && (
+            <form action={setJobStatus} className="lift-done">
+              <input type="hidden" name="job_id" value={card.id} />
+              <input type="hidden" name="status" value="waiting_quote" />
+              <button className="btn quiet" type="submit">סיימתי, צריך אישור</button>
+            </form>
+          )}
+        </>
       )}
 
       <Link className="lift-link" href={`/staff/job/${card.id}`}>הכרטיס המלא</Link>
@@ -58,7 +71,7 @@ export default async function LiftPage() {
   const { data: cards } = await supabase
     .from("job_cards")
     .select("id, plate, vehicle_make, vehicle_model, vehicle_year, engine_code, status, lift")
-    .in("status", ["open", "in_progress", "waiting_approval"])
+    .in("status", ["open", "in_progress", "waiting_quote", "waiting_approval"])
     .order("opened_at", { ascending: true })
 
   const all = cards ?? []

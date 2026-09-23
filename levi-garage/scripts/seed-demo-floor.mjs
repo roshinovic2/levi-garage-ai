@@ -71,6 +71,24 @@ const FLOOR = [
     statusAgo: 150,
   },
   {
+    // המכונאי סיים ומחכה שדניאל ישלח. התא תפוס, ואנחנו לא עובדים:
+    // זה בדיוק הזמן שהמסך היה מסתיר קודם, כי הכרטיס נראה "בעבודה".
+    cal_uid: null,
+    plate: "4471290",
+    customer_name: "נטלי אבידן",
+    customer_phone: "0500000006",
+    whatsapp_consent: true,
+    vehicle_make: "קיה",
+    vehicle_model: "SPORTAGE",
+    vehicle_year: 2018,
+    fuel: "בנזין",
+    lift: 3,
+    status: "waiting_quote",
+    openedAgo: 140,
+    liftAgo: 130,
+    statusAgo: 40,
+  },
+  {
     // נכנס בלי תור, ואין לו עדיין ליפט. בלי המפה אף אחד לא רואה אותו.
     cal_uid: null,
     plate: "74815302",
@@ -88,7 +106,8 @@ const FLOOR = [
     statusAgo: 50,
   },
   {
-    // גמור, ועדיין תופס תא. זה בדיוק מה שהמפה אמורה להקפיץ לעין.
+    // גמור. סיום טיפול מפנה את התא, ולכן הוא כבר לא על ליפט: הוא בחצר,
+    // מחכה שהלקוח יגיע לקחת אותו.
     cal_uid: null,
     plate: "6304821",
     customer_name: "אבי מזרחי",
@@ -98,10 +117,10 @@ const FLOOR = [
     vehicle_model: "COROLLA",
     vehicle_year: 2016,
     fuel: "בנזין",
-    lift: 4,
+    lift: null,
     status: "ready",
     openedAgo: 260,
-    liftAgo: 250,
+    liftAgo: null,
     statusAgo: 35,
   },
 ]

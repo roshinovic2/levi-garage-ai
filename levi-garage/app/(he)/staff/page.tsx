@@ -48,6 +48,9 @@ export default async function StaffBoard() {
 
   const all = cards ?? []
   const waiting = all.filter((c) => c.status === "waiting_approval")
+  // המכונאי סיים וצריך שדניאל ישלח. זה תור שלנו, לא של הלקוח, ולכן הוא
+  // מופיע בנפרד: זה הזמן היחיד בשרשרת שאנחנו לבד אשמים בו.
+  const toSend = all.filter((c) => c.status === "waiting_quote")
   const ready = all.filter((c) => c.status === "ready")
   const working = all.filter((c) => c.status === "open" || c.status === "in_progress")
   const arriving = booked ?? []
@@ -64,6 +67,9 @@ export default async function StaffBoard() {
       </header>
 
       <div className="board-counts" aria-label="סיכום">
+        <span className={toSend.length ? "hot" : ""}>
+          <b className="num">{toSend.length}</b> {toSend.length === 1 ? "מחכה לשליחה" : "מחכים לשליחה"}
+        </span>
         <span className={waiting.length ? "hot" : ""}>
           <b className="num">{waiting.length}</b> {waiting.length === 1 ? "מחכה ללקוח" : "מחכים ללקוח"}
         </span>
@@ -77,6 +83,29 @@ export default async function StaffBoard() {
           <b className="num">{arriving.length}</b> {arriving.length === 1 ? "עוד לא הגיע" : "עוד לא הגיעו"}
         </span>
       </div>
+
+      {toSend.length > 0 && (
+        <section className="board-group hot" aria-labelledby="g-tosend">
+          <h2 id="g-tosend">מחכים שנשלח ללקוח</h2>
+          <p className="board-why">המכונאי סיים. עד שלא נשלח מחיר, הרכב תקוע והתא תפוס בגללנו.</p>
+          <ul className="board-rows">
+            {toSend.map((c) => (
+              <li key={c.id}>
+                <Plate value={c.plate} />
+                <div>
+                  <b>{carName(c)}</b>
+                  <span className="staff-meta">
+                    {c.customer_name || "ללא שם"}
+                    {c.lift ? ` · ליפט ${c.lift}` : ""} · מחכה{" "}
+                    <Since iso={c.status_since} initial={elapsed(c.status_since)} />
+                  </span>
+                </div>
+                <Link className="btn" href={`/staff/job/${c.id}`}>שלח ללקוח</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {waiting.length > 0 && (
         <section className="board-group hot" aria-labelledby="g-waiting">
