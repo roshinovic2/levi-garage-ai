@@ -5,6 +5,10 @@ import { NextResponse } from "next/server"
 
 const RESOURCE = "053cea08-09bc-40ec-8f7a-156f0677aff3"
 
+// המאגר הממשלתי איטי: תשובה ראשונה לוקחת 20 עד 30 שניות. התשובה נשמרת ליממה,
+// ולכן רק הבקשה הראשונה לכל מספר משלמת את ההמתנה.
+export const maxDuration = 45
+
 export async function GET(req: Request) {
   const plate = (new URL(req.url).searchParams.get("n") ?? "").replace(/\D/g, "")
   if (plate.length < 7 || plate.length > 8) {
@@ -17,7 +21,11 @@ export async function GET(req: Request) {
   url.searchParams.set("limit", "1")
 
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000), next: { revalidate: 86400 } })
+    const res = await fetch(url, {
+      headers: { "user-agent": "levi-garage-site/1.0 (+https://levi-garage.vercel.app)" },
+      signal: AbortSignal.timeout(35000),
+      next: { revalidate: 86400 },
+    })
     if (!res.ok) throw new Error(String(res.status))
     const record = (await res.json())?.result?.records?.[0]
     if (!record) return NextResponse.json({ found: false })
