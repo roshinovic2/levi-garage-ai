@@ -4,7 +4,8 @@ import { notFound } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
-import { setJobStatus } from "../../actions"
+import { resendReadyNotice, setJobStatus } from "../../actions"
+import { noticeLabel } from "@/lib/staff/notify"
 import { DraftForm } from "@/components/staff/draft-form"
 import { RetryButton } from "@/components/staff/retry-button"
 import { fmtStamp } from "@/lib/staff/format"
@@ -46,6 +47,15 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
     .select("id, kind, storage_path, mime, finding_id, created_at")
     .eq("job_card_id", jobId)
     .order("created_at", { ascending: false })
+
+  // השורה של "הרכב מוכן": האם הלקוח יודע, ואם לא, למה. מסך תלוי לא מגיע לכאן.
+  const { data: notice } = await supabase
+    .from("customer_notices")
+    .select("status, reason, sent_at")
+    .eq("job_card_id", jobId)
+    .eq("kind", "ready")
+    .maybeSingle()
+  const noticeText = noticeLabel(notice)
 
   const photos = (media ?? []).filter((m) => m.kind === "photo")
   // הקלטה ששמורה ואין לה טיוטה: המודל נפל, ומה שנאמר עדיין כאן.
@@ -98,6 +108,19 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </header>
+
+      {noticeText && (
+        <div className={`staff-note notice-${notice?.status}`} role="status">
+          {noticeText}
+          {notice?.status === "sent" && notice.sent_at ? ` · ${fmtStamp(notice.sent_at)}` : ""}
+          {notice?.status === "failed" && job.status === "ready" && (
+            <form action={resendReadyNotice} className="notice-retry">
+              <input type="hidden" name="job_id" value={job.id} />
+              <button className="btn quiet" type="submit">לשלוח שוב</button>
+            </form>
+          )}
+        </div>
+      )}
 
       <section className="staff-section" aria-labelledby="findings-title">
         <h2 id="findings-title">מה נמצא ברכב</h2>

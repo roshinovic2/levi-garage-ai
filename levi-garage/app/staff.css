@@ -164,6 +164,12 @@ select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5
 .job-decision { margin-top: 10px; font-weight: 700; }
 .job-decision.approved { color: var(--forest); }
 
+/* האם הלקוח יודע שהרכב מוכן. ירוק כשכן, אדום כשניסינו ולא יצא. */
+.staff-note.notice-sent { color: var(--ink); border-inline-start: 3px solid var(--forest); }
+.staff-note.notice-failed { color: var(--ink); border-inline-start: 3px solid #c0392b; }
+.staff-note.notice-failed, .staff-note.notice-sent { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.notice-retry .btn { min-height: 40px; padding-inline: 14px; font-size: 14px; }
+
 /* מסך הטיוטה */
 .job-draft { margin-top: 14px; display: grid; gap: 8px; }
 .job-prices {

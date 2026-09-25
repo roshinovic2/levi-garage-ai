@@ -70,6 +70,19 @@ const waNumber =
 
 const botDir = target === "bot" ? need("BOT_DIR", String.raw`הנתיב למאגר של הבוט. למשל: BOT_DIR=C:\projects\Personal-Bot`) : null
 
+// "הרכב מוכן" (שלב ג'): האתר מבקש מהבוט לשלוח, ולכן האתר צריך את הכתובת של
+// הבוט, והבוט צריך רשימה של מי מותר לקבל. המוסך בדוי, ולכן כל טלפון של
+// "לקוח" בנתונים הוא נתון בדיקה — ומספר מומצא שייך לאדם אמיתי. ברשימה רק
+// מי שהסכים לקבל הודעות בהדגמה, מופרדים בפסיק.
+const botUrl = target === "site" ? need("BOT_URL", 'הכתובת של הבוט ב-Vercel, בלי "/" בסוף') : null
+const notifyAllowed =
+  target === "bot"
+    ? need(
+        "GARAGE_NOTIFY_ALLOWED",
+        'מי מותר לקבל "הרכב מוכן": ספרות עם קידומת מדינה, מופרדים בפסיק. למשל: 9725XXXXXXXX,9725YYYYYYYY',
+      )
+    : null
+
 // גם הקישור נבדק לפני שנוצר טוקן. Vercel CLI מגרסה 54 כותב repo.json
 // לפרויקט שמחובר לגיט, ו-project.json לפרויקט שלא. שניהם תקינים.
 const dir = target === "site" ? resolve(repo, "levi-garage") : botDir
@@ -83,26 +96,43 @@ if (!linked) {
   process.exit(1)
 }
 
-// הטוקן חייב להיות **זהה** בשני הצדדים: הבוט שולח אותו בכותרת, והאתר משווה.
-// הוא נוצר פעם אחת ונשמר מקומית, כדי שההרצה השנייה תשתמש באותו ערך.
-let token = local.get("GARAGE_BOT_TOKEN")
-if (!token) {
-  token = randomBytes(24).toString("hex")
-  appendFileSync(localFile, `${existsSync(localFile) ? "\n" : ""}GARAGE_BOT_TOKEN=${token}\n`, "utf8")
-  console.log("· נוצר GARAGE_BOT_TOKEN חדש ונשמר מקומית (לא מודפס, לא בריפו)")
+// כל טוקן חייב להיות **זהה** בשני הצדדים: צד אחד שולח אותו בכותרת, והשני
+// משווה. הוא נוצר פעם אחת ונשמר מקומית, כדי שההרצה השנייה תשתמש באותו ערך.
+function localToken(name) {
+  let value = local.get(name)
+  if (!value) {
+    value = randomBytes(24).toString("hex")
+    appendFileSync(localFile, `${existsSync(localFile) ? "\n" : ""}${name}=${value}\n`, "utf8")
+    local.set(name, value)
+    console.log(`· נוצר ${name} חדש ונשמר מקומית (לא מודפס, לא בריפו)`)
+  }
+  return value
 }
+
+// שני טוקנים, לא אחד: GARAGE_BOT_TOKEN פותח את האתר לבוט (שאלות), ו-
+// GARAGE_NOTIFY_TOKEN פותח את הבוט לאתר (שליחה). מי שמחזיק באחד מהם לא
+// מקבל אוטומטית את הכוח של השני.
+const token = localToken("GARAGE_BOT_TOKEN")
+const notifyToken = localToken("GARAGE_NOTIFY_TOKEN")
 
 const plan =
   target === "site"
     ? {
         dir,
-        vars: { GARAGE_BOT_TOKEN: token, NEXT_PUBLIC_WHATSAPP_NUMBER: waNumber },
+        vars: {
+          GARAGE_BOT_TOKEN: token,
+          NEXT_PUBLIC_WHATSAPP_NUMBER: waNumber,
+          GARAGE_NOTIFY_URL: `${botUrl.replace(/\/+$/, "")}/api/garage-notify`,
+          GARAGE_NOTIFY_TOKEN: notifyToken,
+        },
       }
     : {
         dir,
         vars: {
           GARAGE_ASK_URL: `${siteUrl.replace(/\/+$/, "")}/api/ask`,
           GARAGE_BOT_TOKEN: token,
+          GARAGE_NOTIFY_TOKEN: notifyToken,
+          GARAGE_NOTIFY_ALLOWED: notifyAllowed,
           ...PUBLIC,
         },
       }

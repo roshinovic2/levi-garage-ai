@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
 import { getStaff, requireStaff, requireManager, screenPath } from "@/lib/staff/session"
+import { notifyReady } from "@/lib/staff/notify"
 
 // כל הפעולות של אזור הצוות עוברות כאן. הן רצות בשרת בזהות של המשתמש המחובר,
 // ולכן ה-RLS והפונקציות במסד אוכפים אותן שוב, גם אם מישהו יקרא להן ישירות.
@@ -93,11 +94,27 @@ export async function setJobStatus(formData: FormData) {
   }
   if (status === "delivered") patch.delivered_at = new Date().toISOString()
 
-  await supabase.from("job_cards").update(patch).eq("id", id)
+  const { error } = await supabase.from("job_cards").update(patch).eq("id", id)
+
+  // הלקוח יודע שהרכב מוכן בלי להתקשר. המסד בודק שוב שהכרטיס באמת "מוכן",
+  // שיש הסכמה ושלא נשלח כבר, ולכן אין כאן בדיקות משלנו.
+  if (!error && status === "ready") await notifyReady(supabase, id)
 
   revalidatePath("/staff")
   revalidatePath("/staff/floor")
   revalidatePath("/staff/lift")
+  revalidatePath(`/staff/job/${id}`)
+}
+
+/** שולח שוב הודעת "מוכן" שנכשלה. המסד מאפשר זאת רק להודעה שנכשלה. */
+export async function resendReadyNotice(formData: FormData) {
+  await requireStaff()
+  const id = Number(formData.get("job_id"))
+  if (!id) return
+
+  const supabase = await createClient()
+  await notifyReady(supabase, id)
+
   revalidatePath(`/staff/job/${id}`)
 }
 
