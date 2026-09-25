@@ -70,6 +70,19 @@ const waNumber =
 
 const botDir = target === "bot" ? need("BOT_DIR", String.raw`הנתיב למאגר של הבוט. למשל: BOT_DIR=C:\projects\Personal-Bot`) : null
 
+// גם הקישור נבדק לפני שנוצר טוקן. Vercel CLI מגרסה 54 כותב repo.json
+// לפרויקט שמחובר לגיט, ו-project.json לפרויקט שלא. שניהם תקינים.
+const dir = target === "site" ? resolve(repo, "levi-garage") : botDir
+const linked = [".vercel/project.json", ".vercel/repo.json"].some((f) => existsSync(resolve(dir, f)))
+if (!linked) {
+  console.error(`
+✗ התיקייה לא מקושרת לפרויקט ב-Vercel:
+  ${dir}
+  להריץ שם: npx vercel link
+`)
+  process.exit(1)
+}
+
 // הטוקן חייב להיות **זהה** בשני הצדדים: הבוט שולח אותו בכותרת, והאתר משווה.
 // הוא נוצר פעם אחת ונשמר מקומית, כדי שההרצה השנייה תשתמש באותו ערך.
 let token = local.get("GARAGE_BOT_TOKEN")
@@ -82,22 +95,17 @@ if (!token) {
 const plan =
   target === "site"
     ? {
-        dir: resolve(repo, "levi-garage"),
+        dir,
         vars: { GARAGE_BOT_TOKEN: token, NEXT_PUBLIC_WHATSAPP_NUMBER: waNumber },
       }
     : {
-        dir: botDir,
+        dir,
         vars: {
           GARAGE_ASK_URL: `${siteUrl.replace(/\/+$/, "")}/api/ask`,
           GARAGE_BOT_TOKEN: token,
           ...PUBLIC,
         },
       }
-
-if (!existsSync(resolve(plan.dir, ".vercel/project.json"))) {
-  console.error(`\n✗ התיקייה לא מקושרת לפרויקט ב-Vercel:\n  ${plan.dir}\n  להריץ שם: npx vercel link\n`)
-  process.exit(1)
-}
 
 function vercel(args, stdin) {
   return new Promise((done) => {
