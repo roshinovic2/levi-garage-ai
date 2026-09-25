@@ -3,7 +3,7 @@ import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
-import { elapsed, fmtTime } from "@/lib/staff/format"
+import { elapsed, fmtStamp, fmtTime } from "@/lib/staff/format"
 import { TopBar } from "@/components/staff/top-bar"
 import { Since } from "@/components/staff/since"
 import { openJobCard, setJobStatus } from "./actions"
@@ -30,8 +30,9 @@ export default async function StaffBoard() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+  const twoWeeks = new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000)
 
-  const [{ data: cards }, { data: booked }] = await Promise.all([
+  const [{ data: cards }, { data: booked }, { data: later }] = await Promise.all([
     supabase
       .from("job_cards")
       .select("id, plate, vehicle_make, vehicle_model, vehicle_year, status, lift, opened_at, lift_since, status_since, customer_name")
@@ -44,6 +45,16 @@ export default async function StaffBoard() {
       .lt("drop_off_at", tomorrow.toISOString())
       .in("status", ["booked", "rescheduled"])
       .order("drop_off_at", { ascending: true }),
+    // לקוח שמגיע לפני המועד שלו צריך את אותו כפתור. בלי זה, תור של מחר לא
+    // היה נגיש מהלוח בכלל, והיה צריך לחכות למחר כדי לפתוח לו כרטיס.
+    supabase
+      .from("bookings")
+      .select("id, plate, customer_name, service, drop_off_at, status, vehicle_make, vehicle_model")
+      .gte("drop_off_at", tomorrow.toISOString())
+      .lt("drop_off_at", twoWeeks.toISOString())
+      .in("status", ["booked", "rescheduled"])
+      .order("drop_off_at", { ascending: true })
+      .limit(40),
   ])
 
   const all = cards ?? []
@@ -214,6 +225,38 @@ export default async function StaffBoard() {
           </>
         )}
       </section>
+
+      {(later ?? []).length > 0 && (
+        <section className="board-group" aria-labelledby="g-later">
+          <h2 id="g-later">תורים בימים הקרובים</h2>
+          <p className="board-why">לקוח שהגיע לפני המועד שלו: אותו כפתור, והכרטיס נפתח עם כל הפרטים מהתור.</p>
+          <ul className="board-rows arriving">
+            {(later ?? []).map((b) => (
+              <li key={b.id}>
+                <Plate value={b.plate} />
+                <div>
+                  <b>{b.customer_name || "ללא שם"}</b>
+                  <span className="staff-meta">
+                    {fmtStamp(b.drop_off_at)} · {b.service || "ללא שירות"}
+                    {b.vehicle_make ? ` · ${carName(b)}` : ""}
+                  </span>
+                </div>
+                <form action={openJobCard} className="board-arrive">
+                  <label className="sr-only" htmlFor={`lift-${b.id}`}>ליפט</label>
+                  <select id={`lift-${b.id}`} name="lift" defaultValue={staff.lift ?? ""}>
+                    <option value="">בלי ליפט</option>
+                    {[1, 2, 3, 4].map((n) => (
+                      <option key={n} value={n}>ליפט {n}</option>
+                    ))}
+                  </select>
+                  <input type="hidden" name="booking_id" value={b.id} />
+                  <button className="btn quiet" type="submit">הגיע מוקדם</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   )
 }

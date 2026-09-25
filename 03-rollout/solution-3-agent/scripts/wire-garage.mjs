@@ -71,17 +71,9 @@ const waNumber =
 const botDir = target === "bot" ? need("BOT_DIR", String.raw`הנתיב למאגר של הבוט. למשל: BOT_DIR=C:\projects\Personal-Bot`) : null
 
 // "הרכב מוכן" (שלב ג'): האתר מבקש מהבוט לשלוח, ולכן האתר צריך את הכתובת של
-// הבוט, והבוט צריך רשימה של מי מותר לקבל. המוסך בדוי, ולכן כל טלפון של
-// "לקוח" בנתונים הוא נתון בדיקה — ומספר מומצא שייך לאדם אמיתי. ברשימה רק
-// מי שהסכים לקבל הודעות בהדגמה, מופרדים בפסיק.
+// הבוט. למי מותר לשלוח מחליט הבוט בעצמו: רק למי שכתב למוסך ב-24 השעות
+// האחרונות. אין רשימה להגדיר כאן.
 const botUrl = target === "site" ? need("BOT_URL", 'הכתובת של הבוט ב-Vercel, בלי "/" בסוף') : null
-const notifyAllowed =
-  target === "bot"
-    ? need(
-        "GARAGE_NOTIFY_ALLOWED",
-        'מי מותר לקבל "הרכב מוכן": ספרות עם קידומת מדינה, מופרדים בפסיק. למשל: 9725XXXXXXXX,9725YYYYYYYY',
-      )
-    : null
 
 // גם הקישור נבדק לפני שנוצר טוקן. Vercel CLI מגרסה 54 כותב repo.json
 // לפרויקט שמחובר לגיט, ו-project.json לפרויקט שלא. שניהם תקינים.
@@ -132,7 +124,6 @@ const plan =
           GARAGE_ASK_URL: `${siteUrl.replace(/\/+$/, "")}/api/ask`,
           GARAGE_BOT_TOKEN: token,
           GARAGE_NOTIFY_TOKEN: notifyToken,
-          GARAGE_NOTIFY_ALLOWED: notifyAllowed,
           ...PUBLIC,
         },
       }
@@ -143,15 +134,23 @@ function vercel(args, stdin) {
     // כאן זה בטוח: כל הארגומנטים הם מחרוזות קבועות שאנחנו כותבים, ולא קלט
     // מהמשתמש. **הערך הסודי לא עובר כאן בכלל** — הוא נכנס דרך stdin למטה,
     // וזו בדיוק הסיבה: ארגומנטים נראים ברשימת התהליכים של המערכת.
-    const p = spawn("npx", ["vercel", ...args], { cwd: plan.dir, shell: true, stdio: ["pipe", "pipe", "pipe"] })
+    // שם המחשב בעברית נשלח בכותרת HTTP, ו-Vercel CLI נופל עליו ("is not a
+    // legal HTTP header value"). ascii-hostname.cjs מחליף אותו רק בתוך התהליך.
+    // בלעדיו, גם env rm נפל — ובמקרה הזה זה היה מזל, כי מחיקה שמצליחה והוספה
+    // שנכשלת היו משאירות את הבוט בלי המשתנים בפריסה הבאה.
+    // לוכסנים רגילים: NODE_OPTIONS מפענח "\" בתוך מירכאות כתו בריחה.
+    const shim = resolve(repo, "levi-garage/scripts/ascii-hostname.cjs").replace(/\\/g, "/")
+    const env = { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --require "${shim}"`.trim() }
+    const p = spawn("npx", ["vercel", ...args], { cwd: plan.dir, env, shell: true, stdio: ["pipe", "pipe", "pipe"] })
     let err = ""
+    let out = ""
     p.stderr.on("data", (d) => (err += d))
-    p.stdout.on("data", () => {})
+    p.stdout.on("data", (d) => (out += d))
     if (stdin !== undefined) {
       p.stdin.write(stdin)
       p.stdin.end()
     }
-    p.on("close", (code) => done({ code, err }))
+    p.on("close", (code) => done({ code, err, out }))
   })
 }
 
@@ -159,9 +158,14 @@ console.log(`\nמגדיר ${Object.keys(plan.vars).length} משתנים ב-${tar
 
 let failed = 0
 for (const [name, value] of Object.entries(plan.vars)) {
-  // מסירים קודם, כי vercel env add על שם קיים נכשל. כישלון כאן זה בסדר:
-  // המשמעות היא שהמשתנה פשוט לא היה מוגדר.
-  await vercel(["env", "rm", name, "production", "--yes"])
+  // מסירים קודם, כי vercel env add על שם קיים נכשל. "לא נמצא" זה בסדר: המשתנה
+  // פשוט חדש. כל כישלון אחר עוצר את המשתנה הזה: עדיף משתנה ישן מאשר חסר.
+  const rm = await vercel(["env", "rm", name, "production", "--yes"])
+  if (rm.code !== 0 && !/env_not_found|was not found/i.test(rm.err + rm.out)) {
+    failed++
+    console.log(`  ✗ ${name} — המחיקה לפני העדכון נכשלה, המשתנה הקיים נשאר: ${rm.err.split("\n").find((l) => l.includes("Error")) ?? `קוד ${rm.code}`}`)
+    continue
+  }
   const { code, err } = await vercel(["env", "add", name, "production"], value)
   if (code === 0) {
     console.log(`  ✓ ${name}`)
