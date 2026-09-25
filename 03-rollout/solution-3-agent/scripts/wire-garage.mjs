@@ -71,8 +71,8 @@ const waNumber =
 const botDir = target === "bot" ? need("BOT_DIR", String.raw`הנתיב למאגר של הבוט. למשל: BOT_DIR=C:\projects\Personal-Bot`) : null
 
 // "הרכב מוכן" (שלב ג'): האתר מבקש מהבוט לשלוח, ולכן האתר צריך את הכתובת של
-// הבוט. למי מותר לשלוח מחליט הבוט בעצמו: רק למי שכתב למוסך ב-24 השעות
-// האחרונות. אין רשימה להגדיר כאן.
+// הבוט. למי מותר לשלוח מחליט הבוט בעצמו: רק למי שכתב למוסך ב-14 הימים
+// האחרונים. אין רשימה להגדיר כאן.
 const botUrl = target === "site" ? need("BOT_URL", 'הכתובת של הבוט ב-Vercel, בלי "/" בסוף') : null
 
 // גם הקישור נבדק לפני שנוצר טוקן. Vercel CLI מגרסה 54 כותב repo.json
@@ -106,6 +106,9 @@ function localToken(name) {
 // מקבל אוטומטית את הכוח של השני.
 const token = localToken("GARAGE_BOT_TOKEN")
 const notifyToken = localToken("GARAGE_NOTIFY_TOKEN")
+// Vercel שולח אותו בכותרת למשימה היומית של התזכורות (vercel.json). בלעדיו
+// הנתיב /api/cron/reminders סגור.
+const cronSecret = target === "site" ? localToken("CRON_SECRET") : null
 
 const plan =
   target === "site"
@@ -116,6 +119,7 @@ const plan =
           NEXT_PUBLIC_WHATSAPP_NUMBER: waNumber,
           GARAGE_NOTIFY_URL: `${botUrl.replace(/\/+$/, "")}/api/garage-notify`,
           GARAGE_NOTIFY_TOKEN: notifyToken,
+          CRON_SECRET: cronSecret,
         },
       }
     : {

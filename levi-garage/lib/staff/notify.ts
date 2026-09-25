@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 // "הרכב מוכן": ההודעה שמחליפה את 25–35 שיחות "מתי מוכן" ביום.
 //
 // רק הבוט מחזיק את קו הוואטסאפ, ולכן האתר לא שולח בעצמו — הוא מבקש מהבוט.
-// הבוט מחליט על הנוסח, ושולח רק למי שכתב למוסך ב-24 השעות האחרונות (ראו
+// הבוט מחליט על הנוסח, ושולח רק למי שכתב למוסך ב-14 הימים האחרונים (ראו
 // lib/garage.js במאגר של הבוט). כאן: לתפוס את ההודעה במסד, לבקש, ולרשום מה קרה.
 //
 // כלום כאן לא זורק. כישלון בשליחה לא אמור לבטל את זה שהרכב מוכן: הכרטיס
@@ -19,7 +19,7 @@ export function toWaNumber(phone: string | null | undefined): string | null {
   return null
 }
 
-type Kind = "ready" | "quote"
+type Kind = "ready" | "quote" | "reminder"
 
 type Claim = {
   id: number
@@ -30,6 +30,8 @@ type Claim = {
   model?: string | null
   plate?: string | null
   token?: string | null
+  at?: string | null
+  uid?: string | null
 }
 
 type Outcome = { status: "sent" | "failed" | "skipped"; reason?: string }
@@ -52,6 +54,8 @@ async function ask(kind: Kind, claim: Claim, to: string): Promise<Outcome> {
         plateTail: String(claim.plate ?? "").replace(/\D/g, "").slice(-3),
         // לקישור האישור: רק הטוקן. הבוט בונה את הכתובת בעצמו, על האתר שלנו.
         ...(kind === "quote" ? { token: claim.token } : {}),
+        // לתזכורת: מתי, ומזהה התור ב-Cal.com. את הנוסח ואת הקישור לביטול הבוט בונה.
+        ...(kind === "reminder" ? { at: claim.at, uid: claim.uid } : {}),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
@@ -113,7 +117,7 @@ export function noticeLabel(
     no_consent: "הלקוח לא אישר וואטסאפ",
     no_phone: "אין טלפון בכרטיס",
     bad_phone: "הטלפון בכרטיס לא תקין",
-    not_opted_in: "הלקוח לא כתב לנו בוואטסאפ ב-24 השעות האחרונות",
+    not_opted_in: "הלקוח לא כתב לנו בוואטסאפ ב-14 הימים האחרונים",
     history_failed: "לא הצלחנו לבדוק את השיחה עם הלקוח",
     not_wired: "השליחה עוד לא מחוברת",
     send_failed: "הוואטסאפ לא קיבל את ההודעה",
@@ -125,4 +129,46 @@ export function noticeLabel(
     return n.status === "failed" ? `הקישור לאישור לא יצא: ${reason}` : `הקישור לאישור לא נשלח ללקוח: ${reason}`
   }
   return n.status === "failed" ? `ההודעה שהרכב מוכן לא יצאה: ${reason}` : `לא נשלחה ללקוח הודעה שהרכב מוכן: ${reason}`
+}
+
+export type ReminderRun = { due: number; sent: number; skipped: number; failed: number }
+
+/**
+ * תזכורת ביום שלפני: כל התורים של מחר (שעון ישראל), עם הסכמה ועם טלפון.
+ *
+ * אין כאן משתמש מחובר — זה רץ ממשימה יומית, או מכפתור בלוח — ולכן זה עובר
+ * בדלת הצרה של המסד, עם הטוקן המשותף. בטוח להריץ פעמיים: תזכורת שנשלחה לא
+ * נתפסת שוב.
+ */
+export async function sendDueReminders(): Promise<ReminderRun> {
+  const run: ReminderRun = { due: 0, sent: 0, skipped: 0, failed: 0 }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  const secret = process.env.GARAGE_BOT_TOKEN
+  if (!url || !key || !secret || !process.env.GARAGE_NOTIFY_URL || !process.env.GARAGE_NOTIFY_TOKEN) return run
+
+  const rpc = (name: string, args: Record<string, unknown>) =>
+    fetch(`${url}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({ p_secret: secret, ...args }),
+      cache: "no-store",
+    })
+
+  const res = await rpc("claim_due_reminders", {})
+  if (!res.ok) {
+    console.error("claim_due_reminders failed:", res.status)
+    return run
+  }
+  const claims = ((await res.json()) ?? []) as Claim[]
+  run.due = claims.length
+
+  for (const claim of claims) {
+    const to = toWaNumber(claim.phone)
+    const outcome: Outcome = to ? await ask("reminder", claim, to) : { status: "skipped", reason: "bad_phone" }
+    run[outcome.status]++
+    const done = await rpc("finish_reminder", { p_id: claim.id, p_status: outcome.status, p_reason: outcome.reason ?? null })
+    if (!done.ok) console.error("finish_reminder failed:", done.status)
+  }
+  return run
 }

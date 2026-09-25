@@ -764,3 +764,8 @@ select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5
 }
 .job-orphans audio { width: 100%; max-width: 420px; }
 .job-orphans .btn { min-height: 44px; padding-inline: 18px; }
+
+/* תזכורות למחר: הכפתור מתחת להסבר, לא בולט יותר מהתורים עצמם */
+.board-remind { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; }
+.board-remind .board-why { margin: 0; }
+.board-remind .btn { min-height: 40px; padding-inline: 14px; font-size: 14px; }

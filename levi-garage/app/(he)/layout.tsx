@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 
 export default function HebrewLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl" className={`${display.variable} ${body.variable}`}>
+    <html lang="he" dir="rtl" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <head>
         {/* לפני הציור הראשון, כדי שלא יהיה הבהוב של הצבע הלא נכון. */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

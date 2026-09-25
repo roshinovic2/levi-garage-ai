@@ -34,7 +34,7 @@ export default async function IntlLayout({ children, params }: { children: React
   if (lang !== "ar" && lang !== "ru") notFound()
   const fonts = lang === "ar" ? `${arDisplay.variable} ${arBody.variable}` : `${ruDisplay.variable} ${ruBody.variable}`
   return (
-    <html lang={lang} dir={dicts[lang].dir} className={fonts}>
+    <html lang={lang} dir={dicts[lang].dir} className={fonts} suppressHydrationWarning>
       <head>
         {/* לפני הציור הראשון, כדי שלא יהיה הבהוב של הצבע הלא נכון. */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

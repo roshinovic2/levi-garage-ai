@@ -6,7 +6,7 @@ import { requireStaff } from "@/lib/staff/session"
 import { elapsed, fmtStamp, fmtTime } from "@/lib/staff/format"
 import { TopBar } from "@/components/staff/top-bar"
 import { Since } from "@/components/staff/since"
-import { openJobCard, setJobStatus } from "./actions"
+import { openJobCard, sendRemindersNow, setJobStatus } from "./actions"
 
 export const metadata: Metadata = { title: "לוח היום | מוסך לוי ובניו", robots: { index: false, follow: false } }
 
@@ -23,9 +23,22 @@ function carName(c: { vehicle_make: string | null; vehicle_model: string | null;
   return (name || "רכב") + (c.vehicle_year ? `, ${c.vehicle_year}` : "")
 }
 
-export default async function StaffBoard() {
+// מה קרה בלחיצה על "לשלוח עכשיו": נשלחו.דולגו.נכשלו.היו
+function reminderRunNote(raw: string | undefined) {
+  if (!raw || !/^\d+\.\d+\.\d+\.\d+$/.test(raw)) return null
+  const [sent, skipped, failed, due] = raw.split(".").map(Number)
+  if (due === 0) return "אין תזכורות לשלוח: לכל התורים של מחר כבר נשלחה תזכורת, או שאין תורים."
+  const parts = [`נשלחו ${sent}`]
+  if (skipped) parts.push(`${skipped} לא נשלחו (הלקוח לא כתב לנו בוואטסאפ ב-14 הימים האחרונים)`)
+  if (failed) parts.push(`${failed} נכשלו, ואפשר לנסות שוב`)
+  return `תזכורות למחר: ${parts.join(" · ")}.`
+}
+
+export default async function StaffBoard({ searchParams }: { searchParams: Promise<{ reminders?: string }> }) {
   const staff = await requireStaff()
   const supabase = await createClient()
+  const { reminders } = await searchParams
+  const runNote = reminderRunNote(reminders)
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -65,6 +78,16 @@ export default async function StaffBoard() {
   const ready = all.filter((c) => c.status === "ready")
   const working = all.filter((c) => c.status === "open" || c.status === "in_progress")
   const arriving = booked ?? []
+
+  // איזה תור כבר קיבל תזכורת. מכונאי ומנהל רואים (RLS); מסך תלוי לא מגיע לכאן.
+  const bookingIds = [...arriving, ...(later ?? [])].map((b) => b.id)
+  const { data: reminded } = bookingIds.length
+    ? await supabase.from("customer_notices").select("booking_id, status").eq("kind", "reminder").in("booking_id", bookingIds)
+    : { data: [] }
+  const reminderOf = new Map((reminded ?? []).map((n) => [n.booking_id, n.status]))
+  const reminderTag = (id: number) =>
+    reminderOf.get(id) === "sent" ? " · ✓ נשלחה תזכורת" : reminderOf.get(id) === "skipped" ? " · בלי תזכורת (לא כתב לנו)" : ""
+  const canRemind = staff.role === "owner" || staff.role === "manager"
 
   return (
     <main className="staff-wrap">
@@ -206,6 +229,7 @@ export default async function StaffBoard() {
                     <span className="staff-meta">
                       {fmtTime(b.drop_off_at)} · {b.service || "ללא שירות"}
                       {b.vehicle_make ? ` · ${carName(b)}` : ""}
+                      {reminderTag(b.id)}
                     </span>
                   </div>
                   <form action={openJobCard} className="board-arrive">
@@ -230,6 +254,13 @@ export default async function StaffBoard() {
         <section className="board-group" aria-labelledby="g-later">
           <h2 id="g-later">תורים בימים הקרובים</h2>
           <p className="board-why">לקוח שהגיע לפני המועד שלו: אותו כפתור, והכרטיס נפתח עם כל הפרטים מהתור.</p>
+          {canRemind && (
+            <form action={sendRemindersNow} className="board-remind">
+              <p className="board-why">תזכורת בוואטסאפ יוצאת לבד כל ערב, לכל מי שיש לו תור מחר.</p>
+              <button className="btn quiet" type="submit">לשלוח עכשיו את התזכורות למחר</button>
+            </form>
+          )}
+          {runNote && <p className="staff-note" role="status">{runNote}</p>}
           <ul className="board-rows arriving">
             {(later ?? []).map((b) => (
               <li key={b.id}>
@@ -239,6 +270,7 @@ export default async function StaffBoard() {
                   <span className="staff-meta">
                     {fmtStamp(b.drop_off_at)} · {b.service || "ללא שירות"}
                     {b.vehicle_make ? ` · ${carName(b)}` : ""}
+                    {reminderTag(b.id)}
                   </span>
                 </div>
                 <form action={openJobCard} className="board-arrive">

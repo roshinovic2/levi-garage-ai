@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
 import { getStaff, requireStaff, requireManager, screenPath } from "@/lib/staff/session"
-import { notifyQuote, notifyReady } from "@/lib/staff/notify"
+import { notifyQuote, notifyReady, sendDueReminders } from "@/lib/staff/notify"
 
 // כל הפעולות של אזור הצוות עוברות כאן. הן רצות בשרת בזהות של המשתמש המחובר,
 // ולכן ה-RLS והפונקציות במסד אוכפים אותן שוב, גם אם מישהו יקרא להן ישירות.
@@ -155,6 +155,17 @@ export async function sendFinding(formData: FormData) {
   revalidatePath(`/staff/job/${jobId}`)
   revalidatePath("/staff")
   revalidatePath("/staff/floor")
+}
+
+/**
+ * התזכורות למחר יוצאות לבד כל ערב. הכפתור הזה שולח אותן עכשיו — לתור שנקבע
+ * אחרי המשימה של הערב, ולהדגמה. מי שכבר קיבל תזכורת לא יקבל שוב.
+ */
+export async function sendRemindersNow() {
+  await requireManager()
+  const run = await sendDueReminders()
+  revalidatePath("/staff")
+  redirect(`/staff?reminders=${run.sent}.${run.skipped}.${run.failed}.${run.due}`)
 }
 
 /** שולח שוב את הקישור לאישור, כשהשליחה בוואטסאפ נכשלה. */
