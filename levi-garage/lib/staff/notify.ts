@@ -19,6 +19,8 @@ export function toWaNumber(phone: string | null | undefined): string | null {
   return null
 }
 
+type Kind = "ready" | "quote"
+
 type Claim = {
   id: number
   send: boolean
@@ -27,11 +29,12 @@ type Claim = {
   make?: string | null
   model?: string | null
   plate?: string | null
+  token?: string | null
 }
 
 type Outcome = { status: "sent" | "failed" | "skipped"; reason?: string }
 
-async function ask(claim: Claim, to: string): Promise<Outcome> {
+async function ask(kind: Kind, claim: Claim, to: string): Promise<Outcome> {
   const url = process.env.GARAGE_NOTIFY_URL
   const token = process.env.GARAGE_NOTIFY_TOKEN
   if (!url || !token) return { status: "skipped", reason: "not_wired" }
@@ -41,12 +44,14 @@ async function ask(claim: Claim, to: string): Promise<Outcome> {
       method: "POST",
       headers: { "content-type": "application/json", "x-garage-notify-token": token },
       body: JSON.stringify({
-        kind: "ready",
+        kind,
         to,
         // שם פרטי בלבד. ההודעה לא צריכה יותר, והבוט לא צריך לדעת יותר.
         name: String(claim.name ?? "").trim().split(/\s+/)[0] || "",
         car: [claim.make, claim.model].filter(Boolean).join(" "),
         plateTail: String(claim.plate ?? "").replace(/\D/g, "").slice(-3),
+        // לקישור האישור: רק הטוקן. הבוט בונה את הכתובת בעצמו, על האתר שלנו.
+        ...(kind === "quote" ? { token: claim.token } : {}),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
@@ -59,21 +64,20 @@ async function ask(claim: Claim, to: string): Promise<Outcome> {
   }
 }
 
-/** אחרי שכרטיס עבר ל"מוכן". בטוח לקרוא פעמיים: המסד תופס פעם אחת. */
-export async function notifyReady(supabase: SupabaseClient, jobId: number): Promise<void> {
-  // לא מחובר עדיין: לא תופסים כלום, כדי שכשיחברו, הכרטיס הבא יישלח כרגיל.
+async function notify(supabase: SupabaseClient, kind: Kind, rpc: string, args: Record<string, number>) {
+  // לא מחובר עדיין: לא תופסים כלום, כדי שכשיחברו, הבא בתור יישלח כרגיל.
   if (!process.env.GARAGE_NOTIFY_URL || !process.env.GARAGE_NOTIFY_TOKEN) return
 
-  const { data, error } = await supabase.rpc("claim_ready_notice", { p_job_id: jobId })
+  const { data, error } = await supabase.rpc(rpc, args)
   if (error) {
-    console.error("claim_ready_notice failed:", error.code, error.message)
+    console.error(`${rpc} failed:`, error.code, error.message)
     return
   }
   const claim = data as Claim | null
   if (!claim || !claim.send) return
 
   const to = toWaNumber(claim.phone)
-  const outcome: Outcome = to ? await ask(claim, to) : { status: "skipped", reason: "bad_phone" }
+  const outcome: Outcome = to ? await ask(kind, claim, to) : { status: "skipped", reason: "bad_phone" }
 
   const { error: finishError } = await supabase.rpc("finish_notice", {
     p_id: claim.id,
@@ -83,11 +87,28 @@ export async function notifyReady(supabase: SupabaseClient, jobId: number): Prom
   if (finishError) console.error("finish_notice failed:", finishError.code, finishError.message)
 }
 
+/** אחרי שכרטיס עבר ל"מוכן". בטוח לקרוא פעמיים: המסד תופס פעם אחת. */
+export function notifyReady(supabase: SupabaseClient, jobId: number) {
+  return notify(supabase, "ready", "claim_ready_notice", { p_job_id: jobId })
+}
+
+/**
+ * אחרי שדניאל שלח ממצא ללקוח: הקישור לאישור יוצא בוואטסאפ, במקום שדניאל
+ * יעתיק אותו ביד. הודעה אחת לכל קישור; ממצא שנשלח שוב מקבל קישור חדש, ולכן
+ * גם הודעה חדשה.
+ */
+export function notifyQuote(supabase: SupabaseClient, findingId: number) {
+  return notify(supabase, "quote", "claim_quote_notice", { p_finding_id: findingId })
+}
+
 /** מה הצוות רואה בכרטיס. */
-export function noticeLabel(n: { status: string; reason: string | null } | null | undefined): string | null {
+export function noticeLabel(
+  n: { status: string; reason: string | null } | null | undefined,
+  kind: Kind = "ready",
+): string | null {
   if (!n) return null
-  if (n.status === "sent") return "נשלחה ללקוח הודעת וואטסאפ שהרכב מוכן"
-  if (n.status === "pending") return "שולחים ללקוח הודעה שהרכב מוכן…"
+  if (n.status === "sent") return kind === "quote" ? "הקישור לאישור נשלח ללקוח בוואטסאפ" : "נשלחה ללקוח הודעת וואטסאפ שהרכב מוכן"
+  if (n.status === "pending") return kind === "quote" ? "שולחים ללקוח את הקישור לאישור…" : "שולחים ללקוח הודעה שהרכב מוכן…"
   const why: Record<string, string> = {
     no_consent: "הלקוח לא אישר וואטסאפ",
     no_phone: "אין טלפון בכרטיס",
@@ -97,7 +118,11 @@ export function noticeLabel(n: { status: string; reason: string | null } | null 
     not_wired: "השליחה עוד לא מחוברת",
     send_failed: "הוואטסאפ לא קיבל את ההודעה",
     unreachable: "הבוט לא ענה",
+    no_site: "לבוט חסרה הכתובת של האתר",
   }
   const reason = (n.reason && why[n.reason]) || "תקלה בשליחה"
-  return n.status === "failed" ? `ההודעה ללקוח לא יצאה: ${reason}` : `לא נשלחה הודעה ללקוח: ${reason}`
+  if (kind === "quote") {
+    return n.status === "failed" ? `הקישור לאישור לא יצא: ${reason}` : `הקישור לאישור לא נשלח ללקוח: ${reason}`
+  }
+  return n.status === "failed" ? `ההודעה שהרכב מוכן לא יצאה: ${reason}` : `לא נשלחה ללקוח הודעה שהרכב מוכן: ${reason}`
 }

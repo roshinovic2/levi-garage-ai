@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
 import { getStaff, requireStaff, requireManager, screenPath } from "@/lib/staff/session"
-import { notifyReady } from "@/lib/staff/notify"
+import { notifyQuote, notifyReady } from "@/lib/staff/notify"
 
 // כל הפעולות של אזור הצוות עוברות כאן. הן רצות בשרת בזהות של המשתמש המחובר,
 // ולכן ה-RLS והפונקציות במסד אוכפים אותן שוב, גם אם מישהו יקרא להן ישירות.
@@ -146,11 +146,28 @@ export async function sendFinding(formData: FormData) {
 
   // הנוסח שאדם ראה ואישור הוא הנוסח שנשמר, ולכן מעדכנים גם את הטיוטה.
   await supabase.from("findings").update({ customer_text: message }).eq("id", findingId)
-  await supabase.rpc("send_finding", { p_finding_id: findingId, p_message: message, p_channel: "link" })
+  const { error } = await supabase.rpc("send_finding", { p_finding_id: findingId, p_message: message, p_channel: "link" })
+
+  // הקישור יוצא ללקוח בוואטסאפ, ודניאל לא צריך להעתיק אותו. אם השליחה לא
+  // עברה, הקישור עדיין תקף ומופיע בכרטיס, עם הסיבה וכפתור לשלוח שוב.
+  if (!error) await notifyQuote(supabase, findingId)
 
   revalidatePath(`/staff/job/${jobId}`)
   revalidatePath("/staff")
   revalidatePath("/staff/floor")
+}
+
+/** שולח שוב את הקישור לאישור, כשהשליחה בוואטסאפ נכשלה. */
+export async function resendQuoteNotice(formData: FormData) {
+  await requireManager()
+  const findingId = Number(formData.get("finding_id"))
+  const jobId = Number(formData.get("job_id"))
+  if (!findingId) return
+
+  const supabase = await createClient()
+  await notifyQuote(supabase, findingId)
+
+  revalidatePath(`/staff/job/${jobId}`)
 }
 
 /** מכונאי לוקח לליפט שלו רכב שנפתח בלי שיוך. */

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
-import { resendReadyNotice, setJobStatus } from "../../actions"
+import { resendQuoteNotice, resendReadyNotice, setJobStatus } from "../../actions"
 import { noticeLabel } from "@/lib/staff/notify"
 import { DraftForm } from "@/components/staff/draft-form"
 import { RetryButton } from "@/components/staff/retry-button"
@@ -19,6 +19,36 @@ const findingStatus: Record<string, string> = {
   approved: "הלקוח אישר",
   declined: "הלקוח דחה",
   cancelled: "בוטלה",
+}
+
+// האם הקישור לאישור יצא ללקוח בוואטסאפ. בלי שורה בכלל: השליחה עוד לא
+// מחוברת, או שהממצא נשלח לפני שהיא חוברה — והקישור עדיין מועתק ביד.
+function QuoteNoticeLine({
+  notice,
+  findingId,
+  jobId,
+  canSend,
+}: {
+  notice: { status: string; reason: string | null; sent_at: string | null } | undefined
+  findingId: number
+  jobId: number
+  canSend: boolean
+}) {
+  const text = noticeLabel(notice, "quote")
+  if (!notice || !text) return null
+  return (
+    <div className={`staff-note notice-${notice.status}`} role="status">
+      {text}
+      {notice.status === "sent" && notice.sent_at ? ` · ${fmtStamp(notice.sent_at)}` : ""}
+      {notice.status === "failed" && canSend && (
+        <form action={resendQuoteNotice} className="notice-retry">
+          <input type="hidden" name="finding_id" value={findingId} />
+          <input type="hidden" name="job_id" value={jobId} />
+          <button className="btn quiet" type="submit">לשלוח שוב</button>
+        </form>
+      )}
+    </div>
+  )
 }
 
 export default async function JobCardPage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,14 +78,15 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
     .eq("job_card_id", jobId)
     .order("created_at", { ascending: false })
 
-  // השורה של "הרכב מוכן": האם הלקוח יודע, ואם לא, למה. מסך תלוי לא מגיע לכאן.
-  const { data: notice } = await supabase
+  // מה יצא ללקוח בוואטסאפ, ואם לא, למה. "הרכב מוכן" אחד לכרטיס, והקישור
+  // לאישור אחד לכל קישור (ref הוא הטוקן שלו). מסך תלוי לא מגיע לכאן.
+  const { data: notices } = await supabase
     .from("customer_notices")
-    .select("status, reason, sent_at")
+    .select("kind, ref, status, reason, sent_at")
     .eq("job_card_id", jobId)
-    .eq("kind", "ready")
-    .maybeSingle()
+  const notice = (notices ?? []).find((n) => n.kind === "ready") ?? null
   const noticeText = noticeLabel(notice)
+  const quoteNotice = new Map((notices ?? []).filter((n) => n.kind === "quote").map((n) => [n.ref, n]))
 
   const photos = (media ?? []).filter((m) => m.kind === "photo")
   // הקלטה ששמורה ואין לה טיוטה: המודל נפל, ומה שנאמר עדיין כאן.
@@ -176,12 +207,20 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
                         </p>
                       ) : (
                         approval?.token && (
-                          <p className="job-note">
-                            ממתינים לתשובה.{" "}
-                            <a href={`/approve/${approval.token}`} target="_blank" rel="noreferrer">
-                              הקישור שנשלח ללקוח
-                            </a>
-                          </p>
+                          <>
+                            <p className="job-note">
+                              ממתינים לתשובה.{" "}
+                              <a href={`/approve/${approval.token}`} target="_blank" rel="noreferrer">
+                                הקישור שנשלח ללקוח
+                              </a>
+                            </p>
+                            <QuoteNoticeLine
+                              notice={quoteNotice.get(approval.token)}
+                              findingId={f.id}
+                              jobId={job.id}
+                              canSend={canSend}
+                            />
+                          </>
                         )
                       )}
                     </>

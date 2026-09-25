@@ -148,6 +148,76 @@ try {
     body: JSON.stringify({ status: "sent" }),
   })
   ok("אי אפשר לסמן 'נשלח' ישירות, בלי לעבור דרך הפונקציה", (await noticeOf(d.id))?.status === "pending", `HTTP ${write.status}`)
+
+  // ---------- הקישור לאישור (011) ----------
+  const quotesOf = async (jobId) =>
+    await (await service(`/rest/v1/customer_notices?job_card_id=eq.${jobId}&kind=eq.quote&select=*&order=id`)).json()
+  const finding = async (jobId) => {
+    const [row] = await (
+      await service(`/rest/v1/findings`, {
+        method: "POST",
+        headers: { prefer: "return=representation" },
+        body: JSON.stringify({ job_card_id: jobId, source: "manual", summary: "בדיקה", customer_text: "צריך להחליף רפידות", status: "draft" }),
+      })
+    ).json()
+    return row
+  }
+  const tokenOf = async (findingId) =>
+    (await (await service(`/rest/v1/approvals?finding_id=eq.${findingId}&select=token`)).json())[0]?.token
+
+  const q = await job({ status: "in_progress", whatsapp_consent: true, customer_phone: PHONE, customer_name: "יוסי" })
+  const qf = await finding(q.id)
+
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, manager)
+  ok("קישור לאישור: ממצא שעוד לא נשלח — אין מה לשלוח", r.status === 200 && r.body === null)
+
+  await rpc("send_finding", { p_finding_id: qf.id, p_message: "צריך להחליף רפידות", p_channel: "link" }, manager)
+  const token1 = await tokenOf(qf.id)
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, manager)
+  ok("אחרי שליחה: יש מה לשלוח, עם הטוקן של הקישור", r.body?.send === true && r.body?.token === token1 && /^[0-9a-f]{36}$/.test(token1 ?? ""))
+  const firstId = r.body?.id
+
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, manager)
+  ok("לחיצה שנייה על אותו קישור: לא נשלח שוב", r.body === null)
+
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, mechanic)
+  ok("מכונאי לא שולח מחיר ללקוח, גם לא דרך כאן", r.status >= 400)
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, wall)
+  ok("מסך הסדנה לא שולח מחיר ללקוח", r.status >= 400)
+
+  await rpc("finish_notice", { p_id: firstId, p_status: "sent" }, manager)
+  await rpc("send_finding", { p_finding_id: qf.id, p_message: "צריך להחליף רפידות ודיסקים", p_channel: "link" }, manager)
+  const token2 = await tokenOf(qf.id)
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, manager)
+  const qs = await quotesOf(q.id)
+  ok("נשלח שוב עם נוסח אחר: קישור חדש, ולכן גם הודעה חדשה", token2 !== token1 && r.body?.token === token2 && qs.length === 2)
+  ok("…וההודעה על הקישור הקודם נשארת ביומן כמו שהייתה", qs.find((n) => n.ref === token1)?.status === "sent")
+
+  await rpc("finish_notice", { p_id: r.body.id, p_status: "failed", p_reason: "unreachable" }, manager)
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, manager)
+  ok("קישור שההודעה עליו נכשלה: נתפס שוב", r.body?.send === true && r.body?.token === token2)
+
+  await service(`/rest/v1/approvals?finding_id=eq.${qf.id}`, { method: "PATCH", body: JSON.stringify({ decision: "approved", decided_at: new Date().toISOString() }) })
+  await rpc("finish_notice", { p_id: r.body.id, p_status: "failed", p_reason: "unreachable" }, manager)
+  r = await rpc("claim_quote_notice", { p_finding_id: qf.id }, manager)
+  ok("הלקוח כבר ענה: לא שולחים לו את הקישור שוב", r.body === null)
+
+  const x = await job({ status: "in_progress", whatsapp_consent: true, customer_phone: PHONE })
+  const xf = await finding(x.id)
+  await rpc("send_finding", { p_finding_id: xf.id, p_message: "בדיקה", p_channel: "link" }, manager)
+  await service(`/rest/v1/approvals?finding_id=eq.${xf.id}`, { method: "PATCH", body: JSON.stringify({ expires_at: new Date(Date.now() - 60_000).toISOString() }) })
+  r = await rpc("claim_quote_notice", { p_finding_id: xf.id }, manager)
+  ok("קישור שפג תוקפו: לא נשלח", r.body === null)
+
+  const y = await job({ status: "in_progress", whatsapp_consent: false, customer_phone: PHONE })
+  const yf = await finding(y.id)
+  await rpc("send_finding", { p_finding_id: yf.id, p_message: "בדיקה", p_channel: "link" }, manager)
+  r = await rpc("claim_quote_notice", { p_finding_id: yf.id }, manager)
+  ok("בלי הסכמה לוואטסאפ: הקישור לא יוצא, ונרשם למה", r.body?.send === false && (await quotesOf(y.id))[0]?.reason === "no_consent")
+
+  await service(`/rest/v1/job_cards?id=eq.${q.id}`, { method: "PATCH", body: JSON.stringify({ status: "ready" }) })
+  r = await rpc("claim_ready_notice", { p_job_id: q.id }, manager)
+  ok("באותו כרטיס, 'הרכב מוכן' לא נחסם בגלל הודעות הקישור", r.body?.send === true)
 } finally {
   // ---------- ניקוי: מחיקת הכרטיס מוחקת גם את השורות ----------
   if (!process.env.KEEP_TEST_ROWS) {
