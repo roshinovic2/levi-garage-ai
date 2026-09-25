@@ -46,7 +46,7 @@ git push
 **א. חיבור ל-Vercel.** אחת משתי דרכים:
 
 ```
-$env:NODE_OPTIONS = "--require C:\projectsinal-project\levi-garage\scriptsscii-hostname.cjs"
+$env:NODE_OPTIONS = "--require C:\projects\final-project\levi-garage\scripts\ascii-hostname.cjs"
 npx vercel login
 Remove-Item Env:NODE_OPTIONS
 ```
