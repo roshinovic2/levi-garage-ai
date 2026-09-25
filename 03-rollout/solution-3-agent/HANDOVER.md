@@ -46,8 +46,12 @@ git push
 **א. חיבור ל-Vercel.** אחת משתי דרכים:
 
 ```
+$env:NODE_OPTIONS = "--require C:\projectsinal-project\levi-garage\scriptsscii-hostname.cjs"
 npx vercel login
+Remove-Item Env:NODE_OPTIONS
 ```
+
+⚠️ **למה השורה הראשונה:** שם המחשב הוא "אלון", וה-CLI של Vercel שולח אותו בכותרת HTTP כשהוא יוצר את טוקן ההתחברות. כותרות HTTP מקבלות רק תווים לטיניים, ולכן `npx vercel login` רגיל נופל עם `is not a legal HTTP header value`. [הקובץ הזה](../../levi-garage/scripts/ascii-hostname.cjs) מחליף את השם ל-`alon-pc` רק בתוך הפקודה הזו, ושם המחשב עצמו לא משתנה. אחרי ההתחברות הוא לא נחוץ: שאר הפקודות לא שולחות את שם המחשב.
 
 או, אם אתה מעדיף שאעבוד בלי שתהיה מחובר: ליצור טוקן ב-Vercel (Settings → Tokens) ולשים אותו **במשתנה סביבה** `VERCEL_TOKEN`, לא בצ'אט.
 
