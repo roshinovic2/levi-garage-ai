@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { setJobStatus } from "../../actions"
 import { DraftForm } from "@/components/staff/draft-form"
+import { RetryButton } from "@/components/staff/retry-button"
 import { fmtStamp } from "@/lib/staff/format"
 import { TopBar } from "@/components/staff/top-bar"
 
@@ -39,6 +40,25 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
     .select("*, approvals(token, decision, decided_at, part_choice, price_chosen, message_text)")
     .eq("job_card_id", jobId)
     .order("created_at", { ascending: false })
+
+  const { data: media } = await supabase
+    .from("media")
+    .select("id, kind, storage_path, mime, finding_id, created_at")
+    .eq("job_card_id", jobId)
+    .order("created_at", { ascending: false })
+
+  const photos = (media ?? []).filter((m) => m.kind === "photo")
+  // הקלטה ששמורה ואין לה טיוטה: המודל נפל, ומה שנאמר עדיין כאן.
+  const orphanAudio = (media ?? []).filter((m) => m.kind === "audio" && !m.finding_id)
+
+  // הדלי פרטי, ולכן כל קובץ מקבל כתובת חתומה לשעה. אין כתובת קבועה שאפשר
+  // להעביר הלאה, וזה בכוונה: אלה תמונות של רכב של לקוח.
+  const signed = new Map<string, string>()
+  const toSign = [...photos, ...orphanAudio].map((m) => m.storage_path)
+  if (toSign.length) {
+    const { data: urls } = await supabase.storage.from("job-media").createSignedUrls(toSign, 3600)
+    for (const u of urls ?? []) if (u.signedUrl && u.path) signed.set(u.path, u.signedUrl)
+  }
 
   const canSend = staff.role !== "mechanic"
 
@@ -149,6 +169,54 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
           </ul>
         )}
       </section>
+
+      {orphanAudio.length > 0 && (
+        <section className="staff-section" aria-labelledby="orphan-title">
+          <h2 id="orphan-title">הקלטות שלא תומללו</h2>
+          <p className="staff-meta">
+            המכונאי דיווח, והמודל נפל. ההקלטה עצמה שמורה — אפשר להאזין לה, או לנסות לתמלל שוב.
+            <b> אף אחד לא צריך לדבר שוב.</b>
+          </p>
+          <ul className="job-orphans">
+            {orphanAudio.map((m) => (
+              <li key={m.id}>
+                <span className="staff-meta">{fmtStamp(m.created_at)}</span>
+                {signed.get(m.storage_path) && (
+                  <audio controls preload="none" src={signed.get(m.storage_path)}>
+                    הדפדפן לא יודע לנגן את ההקלטה.
+                  </audio>
+                )}
+                <RetryButton mediaId={m.id} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {photos.length > 0 && (
+        <section className="staff-section" aria-labelledby="photos-title">
+          <h2 id="photos-title">תמונות</h2>
+          <p className="staff-meta">מה שהמכונאי צילם. הקישורים פגים אחרי שעה, ולכן אי אפשר להעביר אותם הלאה.</p>
+          <ul className="job-photos">
+            {photos.map((m) => {
+              const url = signed.get(m.storage_path)
+              return (
+                <li key={m.id}>
+                  {url ? (
+                    <a href={url} target="_blank" rel="noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`תמונה מהכרטיס, ${fmtStamp(m.created_at)}`} loading="lazy" />
+                    </a>
+                  ) : (
+                    <span className="staff-meta">התמונה לא נטענה</span>
+                  )}
+                  <span className="staff-meta">{fmtStamp(m.created_at)}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
     </main>
   )
 }

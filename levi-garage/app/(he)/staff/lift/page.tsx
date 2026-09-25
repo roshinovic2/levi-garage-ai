@@ -4,6 +4,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStaff } from "@/lib/staff/session"
 import { VoiceButton } from "@/components/staff/voice-button"
+import { PhotoButton } from "@/components/staff/photo-button"
 import { setJobStatus, setMyLift, takeCar } from "../actions"
 import { TopBar } from "@/components/staff/top-bar"
 
@@ -46,6 +47,7 @@ function Car({
       ) : (
         <>
           <VoiceButton jobId={card.id} />
+          <PhotoButton jobId={card.id} />
           {/* "סיימתי" הוא של המכונאי, ולכן הוא יושב כאן ולא רק אצל דניאל.
               בלי הכפתור הזה הרכב נראה "בעבודה" עד שדניאל נזכר לשלוח,
               והזמן שהוא תקוע אצלנו לא נספר לאף אחד. */}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
 import { getStaff } from "@/lib/staff/session"
-import { reportFromVoice } from "@/lib/staff/voice-report"
+import { createFindingFromAudio } from "@/lib/staff/make-finding"
 
 // ההודעה הקולית של המכונאי, מהכפתור בדף הליפט ועד טיוטה בכרטיס.
 //
@@ -12,6 +12,21 @@ import { reportFromVoice } from "@/lib/staff/voice-report"
 export const maxDuration = 90
 
 const MAX_BYTES = 20 * 1024 * 1024
+
+// הדלי משווה mime כמחרוזת מדויקת, והדפדפן שולח "audio/webm;codecs=opus".
+// בלי הניקוי הזה ההעלאה נדחית, המכונאי רואה "לא הצלחנו לשמור", ומה שאמר
+// באמת אובד — בדיוק המקרה שכל המסלול נבנה כדי למנוע.
+const ALLOWED_AUDIO = ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav"]
+
+function audioMime(raw: string) {
+  const base = (raw || "").split(";")[0].trim().toLowerCase()
+  if (ALLOWED_AUDIO.includes(base)) return base
+  // כינויים שמכשירים שולחים לאותם פורמטים בדיוק.
+  if (base === "audio/x-m4a" || base === "audio/aac" || base === "audio/m4a") return "audio/mp4"
+  if (base === "audio/x-wav" || base === "audio/wave") return "audio/wav"
+  if (base === "audio/mp3") return "audio/mpeg"
+  return "audio/webm"
+}
 
 export async function POST(req: Request) {
   const staff = await getStaff()
@@ -39,7 +54,7 @@ export async function POST(req: Request) {
   if (!job) return NextResponse.json({ error: "not found" }, { status: 404 })
 
   const bytes = Buffer.from(await file.arrayBuffer())
-  const mime = file.type || "audio/webm"
+  const mime = audioMime(file.type)
   const path = `job-${job.id}/${Date.now()}.${mime.includes("ogg") ? "ogg" : mime.includes("mp4") ? "m4a" : "webm"}`
 
   // ההקלטה נשמרת לפני הניתוח: גם אם המודל ייפול, מה שהמכונאי אמר לא אובד.
@@ -58,56 +73,26 @@ export async function POST(req: Request) {
     created_by: staff.id,
   })
 
-  let report
   try {
-    report = await reportFromVoice(
-      { data: bytes.toString("base64"), mime },
-      {
-        plate: job.plate,
-        make: job.vehicle_make,
-        model: job.vehicle_model,
-        year: job.vehicle_year,
-        engine: job.engine_code,
-      },
-    )
-  } catch (e) {
-    console.error("voice report failed:", (e as Error).message)
-    // ההקלטה שמורה, ולכן אפשר לנסות שוב בלי לבקש מהמכונאי לדבר שוב.
-    return NextResponse.json({ error: "model", saved: true }, { status: 502 })
-  }
-
-  const { data: finding, error } = await supabase
-    .from("findings")
-    .insert({
-      job_card_id: job.id,
-      source: "voice",
-      transcript: report.transcript,
+    const { finding_id, report } = await createFindingFromAudio({
+      supabase,
+      job,
+      bytes,
+      mime,
+      staffId: staff.id,
+      storagePath: path,
+    })
+    return NextResponse.json({
+      ok: true,
+      finding_id,
       summary: report.summary,
-      customer_text: report.customer_text,
+      red_list: report.red_list,
       price_original: report.price_original,
       price_aftermarket: report.price_aftermarket,
-      eta: report.eta,
-      red_list: report.red_list,
-      model: report.model,
-      created_by: staff.id,
-      status: "draft",
     })
-    .select("id")
-    .single()
-
-  if (error) {
-    console.error("finding insert failed:", error.message)
-    return NextResponse.json({ error: "save" }, { status: 502 })
+  } catch (e) {
+    console.error("voice report failed:", (e as Error).message)
+    // ההקלטה שמורה, ולכן אפשר לנסות שוב מהכרטיס בלי לבקש מהמכונאי לדבר שוב.
+    return NextResponse.json({ error: "model", saved: true }, { status: 502 })
   }
-
-  await supabase.from("media").update({ finding_id: finding.id }).eq("storage_path", path)
-
-  return NextResponse.json({
-    ok: true,
-    finding_id: finding.id,
-    summary: report.summary,
-    red_list: report.red_list,
-    price_original: report.price_original,
-    price_aftermarket: report.price_aftermarket,
-  })
 }

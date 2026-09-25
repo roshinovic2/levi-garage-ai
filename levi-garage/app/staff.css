@@ -713,3 +713,48 @@ select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5
 .lobby-tools .theme-toggle { opacity: .55; }
 .lobby-tools .theme-toggle:hover { opacity: 1; }
 .topbar-me .theme-toggle { box-shadow: none; }
+
+/* ---------- תמונה בכרטיס ---------- */
+
+/* כפתור הצילום משני לכפתור ההקלטה: הקול הוא העיקר, התמונה היא ההוכחה. */
+.voice-btn.photo {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--line);
+  margin-top: 10px;
+}
+.voice-btn.photo .voice-dot { border-radius: 3px; }
+.voice-btn.photo.working { opacity: .7; }
+
+.job-photos {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.job-photos li { display: flex; flex-direction: column; gap: 4px; }
+.job-photos img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--sunk);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.job-photos a { display: block; }
+
+.job-orphans { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.job-orphans li {
+  background: color-mix(in srgb, var(--amber) 10%, var(--surface));
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--amber) 40%, transparent);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.job-orphans audio { width: 100%; max-width: 420px; }
+.job-orphans .btn { min-height: 44px; padding-inline: 18px; }
