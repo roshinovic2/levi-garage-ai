@@ -25,7 +25,7 @@ export function Home({ t }: { t: Dict }) {
               </h1>
               <p className="sub">{t.hero.sub}</p>
               <div className="ctas">
-                <a className="btn" href={bookingLink()}>{t.nav.book}</a>
+                <a className="btn" href={bookingLink({}, t.lang)}>{t.nav.book}</a>
                 <a className="btn on-photo" href={wa ?? "#ask"}>{wa ? "WhatsApp" : t.hero.ask}</a>
               </div>
             </div>
@@ -73,7 +73,7 @@ export function Home({ t }: { t: Dict }) {
                 </li>
               ))}
             </ol>
-            <a className="btn" href={bookingLink()}>{t.nav.book}</a>
+            <a className="btn" href={bookingLink({}, t.lang)}>{t.nav.book}</a>
           </div>
         </section>
 
@@ -102,7 +102,7 @@ export function Home({ t }: { t: Dict }) {
           </div>
           <div className="board-note">
             <p><ShieldCheck aria-hidden />{t.services.note}</p>
-            <a className="btn" href={bookingLink()}>{t.nav.book}</a>
+            <a className="btn" href={bookingLink({}, t.lang)}>{t.nav.book}</a>
           </div>
         </section>
 
@@ -114,7 +114,7 @@ export function Home({ t }: { t: Dict }) {
               <ul>
                 {t.test.points.map((p) => (<li key={p}><Check aria-hidden />{p}</li>))}
               </ul>
-              <a className="btn" href={bookingLink({ service: siteConfig.serviceValues.test })}>{t.test.cta}</a>
+              <a className="btn" href={bookingLink({ service: siteConfig.serviceValues.test }, t.lang)}>{t.test.cta}</a>
             </div>
             <div className="test-photo">
               <Image src="/images/test-prep.jpg" alt={t.test.imgAlt} width={928} height={1152} sizes="(max-width: 900px) 100vw, 50vw" />

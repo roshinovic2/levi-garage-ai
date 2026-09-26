@@ -141,7 +141,7 @@ export function PlateLookup({ t }: { t: Dict }) {
             </dl>
             <div className="plate-next">
               <p>{nextText}</p>
-              <a className="btn" href={bookingLink({ plate: v.plate, service })}>{t.plate.book}</a>
+              <a className="btn" href={bookingLink({ plate: v.plate, service }, t.lang)}>{t.plate.book}</a>
             </div>
           </div>
         )}

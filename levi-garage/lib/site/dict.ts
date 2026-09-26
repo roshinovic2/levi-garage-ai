@@ -32,6 +32,10 @@ export type Dict = {
     book: string; whatsapp: string; you: string; garage: string
   }
   footer: { tagline: string; privacy: string; accessibility: string; terms: string; staff: string; demo: string; langs: string; themeLight: string; themeDark: string }
+  book: {
+    title: string; lead: string; loading: string; fallback: string
+    doneTitle: string; doneLead: string; stepTitle: string; stepBody: string; waButton: string; waMessage: string; note: string
+  }
 }
 
 const he: Dict = {
@@ -189,6 +193,19 @@ const he: Dict = {
     langs: "שפה",
     themeLight: "תאורה בהירה",
     themeDark: "תאורה כהה",
+  },
+  book: {
+    title: "קביעת תור",
+    lead: "בוחרים יום ושעה להשאיר את הרכב. מספר הרישוי מספיק: את פרטי הרכב נשלוף בעצמנו ממשרד התחבורה.",
+    loading: "טוענים את היומן…",
+    fallback: "היומן לא נטען? אפשר לקבוע גם כאן",
+    doneTitle: "התור נקבע ✅",
+    doneLead: "קיבלנו את התור. פרטי הרכב כבר נשלפו ממאגר משרד התחבורה, כך שהמכונאי יודע מה מגיע עוד לפני שתגיעו.",
+    stepTitle: "צעד אחרון: הודעה אחת בוואטסאפ",
+    stepBody: "כדי שנוכל לשלוח לכם תזכורת יום לפני, ואת ההודעה שהרכב מוכן, צריך שתכתבו לנו פעם אחת מהמספר שמסרתם בטופס. ההודעה כבר כתובה, רק לשלוח. נענה לכם עם אישור התור.",
+    waButton: "שליחת הודעה בוואטסאפ",
+    waMessage: "שלום, קבעתי עכשיו תור 🙂 אשמח לקבל תזכורת ועדכון כשהרכב מוכן",
+    note: "לא חובה. בלי ההודעה התור קיים כרגיל, רק לא נוכל לעדכן אתכם בוואטסאפ.",
   },
 }
 
@@ -348,6 +365,19 @@ const ar: Dict = {
     themeLight: "إضاءة فاتحة",
     themeDark: "إضاءة داكنة",
   },
+  book: {
+    title: "حجز موعد",
+    lead: "اختاروا يومًا وساعة لترك السيارة. رقم اللوحة يكفي: نجلب تفاصيل السيارة بأنفسنا من وزارة المواصلات.",
+    loading: "جارٍ تحميل التقويم…",
+    fallback: "التقويم لم يُحمَّل؟ يمكن الحجز هنا أيضًا",
+    doneTitle: "تم حجز الموعد ✅",
+    doneLead: "استلمنا الموعد. تفاصيل السيارة جُلبت من وزارة المواصلات، فالميكانيكي يعرف ما القادم قبل وصولكم.",
+    stepTitle: "خطوة أخيرة: رسالة واحدة في واتساب",
+    stepBody: "لكي نرسل لكم تذكيرًا قبل يوم، ورسالة عندما تكون السيارة جاهزة، اكتبوا لنا مرة واحدة من الرقم الذي أدخلتموه في النموذج. الرسالة مكتوبة مسبقًا، فقط أرسلوها. سنرد بتأكيد الموعد.",
+    waButton: "إرسال رسالة في واتساب",
+    waMessage: "مرحبًا، حجزت موعدًا الآن 🙂 أرجو تذكيري وإبلاغي عندما تكون السيارة جاهزة",
+    note: "ليس إلزاميًا. بدون الرسالة الموعد قائم، فقط لن نستطيع إبلاغكم في واتساب.",
+  },
 }
 
 const ru: Dict = {
@@ -506,6 +536,19 @@ const ru: Dict = {
     themeLight: "Светлая тема",
     themeDark: "Тёмная тема",
   },
+  book: {
+    title: "Запись на ремонт",
+    lead: "Выберите день и время, когда оставите машину. Достаточно номера: данные автомобиля мы сами возьмём из базы Минтранса.",
+    loading: "Загружаем календарь…",
+    fallback: "Календарь не загрузился? Записаться можно здесь",
+    doneTitle: "Вы записаны ✅",
+    doneLead: "Запись получена. Данные автомобиля уже взяты из базы Минтранса, так что механик знает, что к нему едет, ещё до вашего приезда.",
+    stepTitle: "Последний шаг: одно сообщение в WhatsApp",
+    stepBody: "Чтобы мы могли прислать напоминание за день и сообщение, когда машина готова, напишите нам один раз с номера, который вы указали. Текст уже готов, осталось отправить. В ответ мы подтвердим запись.",
+    waButton: "Отправить сообщение в WhatsApp",
+    waMessage: "Здравствуйте, я только что записался 🙂 Пришлите, пожалуйста, напоминание и сообщение, когда машина будет готова",
+    note: "Это не обязательно. Без сообщения запись остаётся в силе, просто мы не сможем писать вам в WhatsApp.",
+  },
 }
 
 export const dicts: Record<Lang, Dict> = { he, ar, ru }
@@ -521,7 +564,21 @@ export const siteConfig = {
   wazeUrl: "https://waze.com/ul?q=%D7%90%D7%96%D7%95%D7%A8%20%D7%94%D7%AA%D7%A2%D7%A9%D7%99%D7%99%D7%94%20%D7%A7%D7%A8%D7%99%D7%99%D7%AA%20%D7%91%D7%99%D7%90%D7%9C%D7%99%D7%A7&navigate=yes",
 }
 
-export function bookingLink(params: { plate?: string; service?: string } = {}) {
+/**
+ * קביעת תור עוברת בדף שלנו, שבו היומן של Cal.com מוטמע. כך, כשהתור נקבע,
+ * הדף יודע על זה ומציע ללקוח לכתוב לנו בוואטסאפ — מה שמאפשר לשלוח לו
+ * תזכורת והודעה כשהרכב מוכן. (הפניה מ-Cal.com לדף שלנו היא יכולת בתשלום.)
+ */
+export function bookingLink(params: { plate?: string; service?: string } = {}, lang: Lang = "he") {
+  const q = new URLSearchParams()
+  if (params.plate) q.set("plate", params.plate)
+  if (params.service) q.set("service", params.service)
+  const path = lang === "he" ? "/book" : `/${lang}/book`
+  return q.size ? `${path}?${q}` : path
+}
+
+/** הקישור הישיר ל-Cal.com, למקרה שההטמעה לא נטענת. */
+export function calDirectLink(params: { plate?: string; service?: string } = {}) {
   const u = new URL(siteConfig.bookingUrl)
   if (params.plate) u.searchParams.set("plate", params.plate)
   if (params.service) u.searchParams.set("service", params.service)

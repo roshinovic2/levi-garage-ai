@@ -21,17 +21,19 @@
       "module": "http:MakeRequest",
       "version": 4,
       "filter": {
-        "name": "רק תור חדש עם מספר רישוי",
+        "name": "תור חדש או שינוי מועד (עם מספר רישוי), או ביטול",
         "conditions": [
+          [
+            {
+              "a": "{{1.payload.responses.plate.value}}",
+              "o": "exist"
+            }
+          ],
           [
             {
               "a": "{{1.triggerEvent}}",
               "o": "text:equal",
-              "b": "BOOKING_CREATED"
-            },
-            {
-              "a": "{{1.payload.responses.plate.value}}",
-              "o": "exist"
+              "b": "BOOKING_CANCELLED"
             }
           ]
         ]
@@ -58,7 +60,7 @@
         ],
         "contentType": "",
         "parseResponse": true,
-        "stopOnHttpError": true
+        "stopOnHttpError": false
       }
     },
     {

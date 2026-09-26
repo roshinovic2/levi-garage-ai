@@ -27,8 +27,26 @@ export async function GET(req: Request) {
       next: { revalidate: 86400 },
     })
     if (!res.ok) throw new Error(String(res.status))
-    const record = (await res.json())?.result?.records?.[0]
-    if (!record) return NextResponse.json({ found: false })
+    let record = (await res.json())?.result?.records?.[0]
+
+    // "לא נמצא" לא נשמר ליממה. בלי זה, תקלה אחת במאגר הממשלתי הייתה נתקעת
+    // באתר עד למחרת. לכן בודקים שוב, בלי מטמון — ואם המאגר כולו ריק, זו
+    // תקלה אצלם (קרה ב-25.9, אחרי טעינה מחדש של המאגר), לא רכב שלא קיים.
+    if (!record) {
+      const again = await fetch(url, { headers: { "user-agent": "levi-garage-site/1.0" }, signal: AbortSignal.timeout(35000), cache: "no-store" })
+      record = again.ok ? (await again.json())?.result?.records?.[0] : undefined
+    }
+    if (!record) {
+      const probe = new URL("https://data.gov.il/api/3/action/datastore_search")
+      probe.searchParams.set("resource_id", RESOURCE)
+      probe.searchParams.set("limit", "1")
+      const empty = await fetch(probe, { signal: AbortSignal.timeout(20000), cache: "no-store" })
+        .then((r) => r.json())
+        .then((j) => (j?.result?.total ?? 0) === 0)
+        .catch(() => true)
+      if (empty) return NextResponse.json({ error: "upstream" }, { status: 502 })
+      return NextResponse.json({ found: false })
+    }
 
     return NextResponse.json({
       found: true,

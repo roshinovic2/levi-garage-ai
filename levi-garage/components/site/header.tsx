@@ -77,7 +77,7 @@ export function SiteHeader({ t, overPhoto = true }: { t: Dict; overPhoto?: boole
           </ul>
           <div className="nav-end">
             <LangLinks current={t.lang} label={t.footer.langs} />
-            <a className="btn" href={bookingLink()}>{t.nav.book}</a>
+            <a className="btn" href={bookingLink({}, t.lang)}>{t.nav.book}</a>
             <button className="menu-btn" aria-expanded={open} aria-controls="mobile-menu" aria-label={open ? t.nav.close : t.nav.menu} onClick={() => setOpen((o) => !o)}>
               {open ? <X aria-hidden /> : <Menu aria-hidden />}
             </button>

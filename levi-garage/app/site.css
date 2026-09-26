@@ -420,3 +420,11 @@ section { position: relative; }
 }
 .theme-toggle:hover { color: var(--ink); }
 .theme-toggle svg { width: 18px; height: 18px; flex: none; }
+
+/* קביעת תור: היומן של Cal.com מוטמע, ברוחב מלא של העמודה */
+.book-page { max-width: 1040px; }
+.cal-frame { margin-top: 24px; min-height: 560px; border-radius: 16px; overflow: hidden; }
+.cal-frame:has(iframe) .cal-loading { display: none; }
+.cal-loading { color: var(--muted); padding: 24px 0; }
+.cal-fallback { margin-top: 12px; }
+.booked-done h1 { font-size: clamp(2.2rem, 4.2vw, 3.2rem); }

@@ -78,9 +78,9 @@ export function AskUs({ t }: { t: Dict }) {
               {m.text}
               {m.role === "model" && m.action && m.action !== "none" && (
                 <div className="acts">
-                  {m.action === "book" && <a href={bookingLink()}>{t.ask.book}</a>}
+                  {m.action === "book" && <a href={bookingLink({}, t.lang)}>{t.ask.book}</a>}
                   {m.action === "whatsapp" && wa && <a href={wa}>{t.ask.whatsapp}</a>}
-                  {m.action === "whatsapp" && !wa && <a href={bookingLink()}>{t.ask.book}</a>}
+                  {m.action === "whatsapp" && !wa && <a href={bookingLink({}, t.lang)}>{t.ask.book}</a>}
                 </div>
               )}
             </div>
